@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CWE Triage Lab</title>
+<meta name="description" content="Four injection weaknesses, one habit: trace untrusted input to the sink, then close the gap. Hands-on training for software developers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0c09;
+  --panel: #14100b;
+  --panel-2: #1c1710;
+  --line: #2a2218;
+  --line-strong: #4a3c26;
+  --cream: #ece1cf;
+  --text: #cdc1ab;
+  --muted: #8c8170;
+  --gold: #d8a942;
+  --gold-hover: #e6bb58;
+  --gold-wash: rgba(216, 169, 66, 0.14);
+  --ok: #a9c47f;
+  --ok-wash: rgba(169, 196, 127, 0.10);
+  --bad: #e8907c;
+  --bad-wash: rgba(232, 144, 124, 0.10);
+  --serif: 'Instrument Serif', Georgia, serif;
+  --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  --r-sm: 4px; --r-md: 8px; --r-lg: 14px;
+  --gutter: clamp(16px, 4vw, 48px);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+.view[hidden] { display: none; }
+.view { animation: viewIn .35s ease both; }
+@keyframes viewIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.view:focus { outline: none; }
+.pager { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin: 56px 0 0; }
+.pager a { display: flex; flex-direction: column; gap: 6px; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--r-lg); text-decoration: none; color: var(--cream); transition: border-color .15s ease, background .15s ease; }
+.pager a:hover { border-color: var(--gold); background: var(--panel); }
+.pager a.next { text-align: right; grid-column: 2; }
+.pager .eyebrow { color: var(--muted); }
+.pager b { font: 400 26px/1.1 var(--serif); }
+.pager a:hover b { color: var(--gold); }
+.brand-home { display: block; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 16px/1.65 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+::selection { background: var(--gold); color: var(--bg); }
+a { color: var(--gold); text-underline-offset: 3px; text-decoration-color: rgba(216,169,66,.4); }
+a:hover { text-decoration-color: var(--gold); }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 2px; }
+code, pre { font-family: var(--mono); font-variant-ligatures: none; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--gutter); }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.skip { position: fixed; left: -999px; top: 8px; }
+.skip:focus { left: 8px; z-index: 20; background: var(--gold); color: var(--bg); padding: 10px 14px; border-radius: var(--r-sm); }
+
+/* ---------- layout + sidebar ---------- */
+body { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: 100vh; }
+.content { min-width: 0; }
+.sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 28px 16px 24px; display: flex; flex-direction: column; gap: 28px; z-index: 10; }
+.brand { font: italic 400 26px/1 var(--serif); color: var(--cream); text-decoration: none; white-space: nowrap; padding: 0 12px; }
+.brand span { color: var(--gold); }
+.side-label { padding: 0 12px; margin-bottom: 10px; display: block; }
+.sidebar nav { display: flex; flex-direction: column; gap: 2px; }
+.sidebar nav a { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 4px 12px; min-height: 56px; padding: 8px 12px; border-left: 2px solid transparent; border-radius: 0 var(--r-md) var(--r-md) 0; color: var(--text); text-decoration: none; transition: background .15s ease, border-color .15s ease; }
+.sidebar nav a:hover { background: var(--panel-2); color: var(--cream); }
+.sidebar nav a.here { border-left-color: var(--gold); background: var(--panel-2); color: var(--cream); }
+.sidebar nav .n { font: 400 30px/1 var(--serif); color: var(--cream); width: 34px; }
+.sidebar nav a.here .n { color: var(--gold); }
+.sidebar nav .t { display: block; font-size: 14px; line-height: 1.3; }
+.sidebar nav .c { display: block; font: 500 11px/1.4 var(--mono); letter-spacing: .1em; color: var(--muted); }
+.sidebar nav a.here .c { color: var(--gold); }
+.side-foot { margin-top: auto; padding: 0 12px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.meter { width: 100%; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .4s ease; }
+.side-foot .count { font: 400 12px/1.4 var(--mono); color: var(--muted); }
+.menu { display: none; }
+.dot { width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--muted); flex: none; }
+.dot.done { background: var(--ok); border-color: var(--ok); }
+
+/* ---------- hero ---------- */
+.hero { padding: clamp(48px, 9vw, 112px) 0 clamp(48px, 7vw, 88px); position: relative; }
+.sidebar nav a.home-link { grid-template-columns: minmax(0,1fr); min-height: 44px; }
+.hero h1 { font: 400 clamp(44px, 8.4vw, 104px)/.95 var(--serif); letter-spacing: -.02em; color: var(--cream); margin: 20px 0 0; max-width: 12ch; }
+.hero h1 em { color: var(--gold); }
+.hero .lede { max-width: 56ch; font-size: clamp(17px, 1.6vw, 19px); color: var(--text); margin: 28px 0 0; }
+.flow { margin: 48px 0 0; display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 0; max-width: 820px; }
+.flow .node { border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; background: var(--panel); }
+.flow .node b { display: block; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.flow .node span { color: var(--cream); font-size: 15px; }
+.flow .node.gap { border-style: dashed; border-color: var(--gold); background: transparent; }
+.flow .node.gap b { color: var(--gold); }
+.flow .arrow { align-self: center; width: 40px; height: 1px; background: var(--line-strong); position: relative; }
+.flow .arrow::after { content: ''; position: absolute; right: 0; top: -4px; border: 4px solid transparent; border-left: 6px solid var(--line-strong); border-right: 0; }
+
+.index { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; margin: 56px 0 0; }
+.index a { background: var(--bg); padding: 22px 20px 20px; text-decoration: none; color: var(--text); display: flex; flex-direction: column; gap: 6px; min-height: 168px; transition: background .2s ease; }
+.index a:hover { background: var(--panel); }
+.index .num { font: 400 64px/.9 var(--serif); color: var(--cream); letter-spacing: -.02em; }
+.index a:hover .num { color: var(--gold); }
+.index .t { color: var(--cream); font-weight: 500; margin-top: auto; }
+.index .s { font: 400 12px/1.4 var(--mono); color: var(--muted); display: flex; align-items: center; gap: 8px; }
+
+/* ---------- module ---------- */
+.module { padding: clamp(40px, 7vw, 88px) 0 clamp(56px, 8vw, 96px); }
+.mhead { display: grid; grid-template-columns: auto minmax(0,1fr); gap: clamp(20px, 4vw, 48px); align-items: end; }
+.mnum { font: 400 clamp(96px, 18vw, 220px)/.78 var(--serif); color: transparent; -webkit-text-stroke: 1px var(--line-strong); letter-spacing: -.04em; user-select: none; }
+.mhead h2 { font: 400 clamp(36px, 5.5vw, 64px)/1 var(--serif); color: var(--cream); margin: 12px 0 0; letter-spacing: -.015em; }
+.mhead .intro { color: var(--muted); max-width: 58ch; margin: 14px 0 0; }
+.rule { margin: 40px 0 0; padding: 22px 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 160px minmax(0,1fr); gap: 24px; }
+.rule p { margin: 0; font: italic 400 clamp(24px, 3vw, 34px)/1.2 var(--serif); color: var(--cream); max-width: 30ch; }
+
+.story { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 32px; margin: 48px 0 0; }
+.story h3 { margin: 0 0 8px; font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.story p { margin: 0; font-size: 15px; }
+
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; margin: 48px 0 0; }
+.snip { margin: 0; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); overflow: hidden; min-width: 0; transition: border-color .25s ease, opacity .25s ease; }
+.snip figcaption { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); font: 500 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.snip.unsafe figcaption { color: var(--bad); }
+.snip.fixed figcaption { color: var(--ok); }
+.snip figcaption small { color: var(--muted); letter-spacing: .04em; text-transform: none; font-weight: 400; }
+.snip pre { margin: 0; padding: 14px; font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ln { display: block; padding: 0 8px; margin: 0 -8px; border-radius: 3px; }
+.ln.hot { background: var(--gold-wash); box-shadow: inset 2px 0 0 var(--gold); color: var(--cream); }
+.snip.dim { opacity: .72; }
+.snip.on { border-color: var(--gold); }
+
+/* tracer */
+.tracer { margin: 24px 0 0; border: 1px solid var(--line); border-radius: var(--r-lg); padding: clamp(18px, 3vw, 28px); background: linear-gradient(180deg, var(--panel), var(--bg)); }
+.tracer-top { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: flex-end; justify-content: space-between; }
+.group-label { display: block; margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 400 13px/1.2 var(--mono); min-height: 40px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--text); cursor: pointer; text-align: left; max-width: 100%; overflow-wrap: anywhere; transition: border-color .15s ease, color .15s ease; }
+.chip:hover { border-color: var(--line-strong); color: var(--cream); }
+.chip[aria-pressed="true"] { border-color: var(--gold); color: var(--cream); background: var(--panel-2); }
+.chip .k { color: var(--muted); margin-right: 6px; }
+.chip[aria-pressed="true"] .k { color: var(--gold); }
+.toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--bg); }
+.toggle button { font: 500 13px/1 var(--mono); min-height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; }
+.toggle button[aria-pressed="true"].u { background: var(--bad); color: var(--bg); }
+.toggle button[aria-pressed="true"].f { background: var(--ok); color: var(--bg); }
+.rail { list-style: none; padding: 0; margin: 24px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; position: relative; }
+.rail li { border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; background: var(--bg); min-width: 0; opacity: .35; transform: translateY(4px); transition: opacity .35s ease, transform .35s ease, border-color .35s ease; }
+.rail li.lit { opacity: 1; transform: none; }
+.rail .h { display: block; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.rail .v { display: block; margin-top: 8px; color: var(--cream); font-size: 14px; overflow-wrap: anywhere; }
+.rail .v.code { font-family: var(--mono); font-size: 13px; }
+.rail li.harm { border-color: var(--bad); background: var(--bad-wash); }
+.rail li.harm .h { color: var(--bad); }
+.rail li.safe { border-color: var(--ok); background: var(--ok-wash); }
+.rail li.safe .h { color: var(--ok); }
+.verdict { margin: 16px 0 0; font-size: 14px; color: var(--muted); min-height: 1.6em; }
+
+/* drill */
+.drill { margin: 48px 0 0; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--panel); }
+.drill > summary { list-style: none; cursor: pointer; padding: 20px clamp(18px, 3vw, 28px); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.drill > summary::-webkit-details-marker { display: none; }
+.drill > summary .title { font: 400 28px/1.1 var(--serif); color: var(--cream); }
+.drill > summary .title i { color: var(--gold); }
+.drill > summary .meta { font: 400 12px/1.4 var(--mono); color: var(--muted); display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.plus { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line-strong); display: grid; place-items: center; color: var(--gold); transition: transform .25s ease; flex: none; }
+.drill[open] .plus { transform: rotate(45deg); }
+.drill-body { padding: 0 clamp(18px, 3vw, 28px) clamp(18px, 3vw, 28px); border-top: 1px solid var(--line); }
+.scenario { margin: 20px 0 0; color: var(--text); }
+.alert { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 16px 0 0; padding: 12px 14px; border-radius: var(--r-md); background: var(--bg); border: 1px solid var(--line); font: 400 12.5px/1.5 var(--mono); color: var(--text); }
+.sev { background: var(--gold); color: var(--bg); padding: 2px 8px; border-radius: var(--r-sm); font-weight: 500; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
+.alert .loc { color: var(--muted); }
+.drill pre.code { margin: 12px 0 0; padding: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); }
+.qs { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin: 24px 0 0; }
+fieldset.q { border: 0; margin: 0; padding: 0; min-width: 0; }
+fieldset.q legend { padding: 0; margin-bottom: 10px; color: var(--cream); font-weight: 500; font-size: 15px; }
+fieldset.q legend span { display: block; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+.opt { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; margin: 0 0 6px; border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer; font-size: 14px; line-height: 1.45; background: var(--bg); transition: border-color .15s ease; }
+.opt:hover { border-color: var(--line-strong); }
+.opt input { accent-color: var(--gold); margin: 3px 0 0; flex: none; width: 16px; height: 16px; }
+.opt:has(input:checked) { border-color: var(--gold); color: var(--cream); }
+.opt.right { border-color: var(--ok); background: var(--ok-wash); color: var(--cream); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-wash); }
+.btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 0; align-items: center; }
+.btn { font: 500 14px/1 var(--sans); min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--gold); background: var(--gold); color: var(--bg); cursor: pointer; transition: background .15s ease; }
+.btn:hover { background: var(--gold-hover); }
+.btn.ghost { background: transparent; color: var(--cream); border-color: var(--line-strong); }
+.btn.ghost:hover { border-color: var(--gold); background: var(--panel-2); }
+.status { font-size: 14px; color: var(--muted); }
+.status.good { color: var(--ok); }
+.status.bad { color: var(--bad); }
+.answer { margin: 24px 0 0; padding: 20px 0 0; border-top: 1px solid var(--line); }
+.answer[hidden] { display: none; }
+.answer .cwe { font: italic 400 24px/1.2 var(--serif); color: var(--gold); margin: 0 0 12px; }
+.answer ol { margin: 0; padding-left: 20px; }
+.answer li { margin: 0 0 8px; font-size: 15px; }
+.ticket { display: grid; grid-template-columns: 120px minmax(0,1fr); gap: 8px 20px; margin: 20px 0 0; font-size: 14px; }
+.ticket dt { font: 500 11px/1.6 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.ticket dd { margin: 0; color: var(--cream); }
+.refs { margin: 32px 0 0; display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; }
+.refs .eyebrow { width: 100%; margin-bottom: 4px; }
+
+/* footer */
+footer { padding: 48px 0 64px; color: var(--muted); font-size: 13px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: space-between; align-items: center; }
+footer p { margin: 0; max-width: 64ch; }
+.done-banner { font: italic 400 20px/1.3 var(--serif); color: var(--ok); }
+
+@media (max-width: 900px) {
+  body { display: block; }
+  .sidebar { height: auto; overflow: visible; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; min-height: 56px; border-right: 0; border-bottom: 1px solid var(--line); background: rgba(20,16,11,.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .brand { font-size: 21px; padding: 0; }
+  .menu { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-strong); background: transparent; color: var(--cream); font: 500 13px/1 var(--mono); cursor: pointer; }
+  .menu[aria-expanded="true"] { border-color: var(--gold); background: var(--panel-2); }
+  .side-mods { display: none; position: absolute; left: 0; right: 0; top: 100%; background: var(--panel); border-bottom: 1px solid var(--line); padding: 12px 8px 16px; box-shadow: 0 18px 30px -12px rgba(0,0,0,.8); }
+  .side-mods.open { display: block; }
+  .side-foot { display: none; }
+}
+@media (max-width: 860px) {
+  .story, .qs { grid-template-columns: minmax(0,1fr); gap: 20px; }
+  .pair { grid-template-columns: minmax(0,1fr); }
+  .index { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .rule { grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .mhead { grid-template-columns: minmax(0,1fr); gap: 0; }
+  .mnum { font-size: 104px; margin-bottom: -8px; }
+}
+@media (max-width: 640px) {
+  .pager { grid-template-columns: minmax(0,1fr); }
+  .pager a.next { grid-column: 1; }
+  .flow { grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .flow .arrow { width: 1px; height: 18px; justify-self: start; margin-left: 20px; }
+  .flow .arrow::after { right: -4px; top: auto; bottom: 0; border: 4px solid transparent; border-top: 6px solid var(--line-strong); border-bottom: 0; }
+  .rail { grid-template-columns: minmax(0,1fr); }
+  .ticket { grid-template-columns: minmax(0,1fr); gap: 2px; }
+  .ticket dd { margin-bottom: 10px; }
+  .drill > summary { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  .view { animation: none; }
+  .rail li { transform: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<aside class="sidebar">
+  <a class="brand" href="#home">CWE <span>Triage</span> Lab</a>
+  <button class="menu" type="button" aria-expanded="false" aria-controls="sideMods" id="menu">CWEs <span aria-hidden="true">▾</span></button>
+  <div class="side-mods" id="sideMods">
+    <span class="eyebrow side-label">Weaknesses</span>
+    <nav aria-label="CWE modules" id="nav"></nav>
+  </div>
+  <div class="side-foot">
+    <div class="meter" aria-hidden="true"><i id="meter"></i></div>
+    <span class="count" id="count">0 of 4 drills solved</span>
+  </div>
+</aside>
+
+<div class="content">
+<main id="main">
+  <section class="hero view" id="home" tabindex="-1" aria-label="Introduction">
+    <div class="wrap">
+      <span class="eyebrow">Secure code training · 4 modules · ~20 min</span>
+      <h1>Follow the input. <em>Find the sink.</em></h1>
+      <p class="lede">Four of the most common injection weaknesses, taught with one habit: trace where untrusted text enters, where it gets interpreted, and which check is missing in between. Every example is static text. Nothing on this page runs an exploit.</p>
+      <div class="flow" aria-label="The triage pattern">
+        <div class="node"><b>Source</b><span>Text a user controls</span></div>
+        <div class="arrow" aria-hidden="true"></div>
+        <div class="node gap"><b>Missing control</b><span>Allowlist, encoding, lookup</span></div>
+        <div class="arrow" aria-hidden="true"></div>
+        <div class="node"><b>Sink</b><span>Where text becomes action</span></div>
+      </div>
+      <div class="index" id="index"></div>
+    </div>
+  </section>
+  <div id="modules"></div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p id="progressNote">Progress is saved in this browser only (localStorage) and is never sent anywhere. Anyone using this browser profile can see it.</p>
+    <button class="btn ghost" type="button" id="reset">Reset progress</button>
+  </div>
+</footer>
+</div>
+
+<noscript><p class="wrap">This lab needs JavaScript enabled.</p></noscript>
+
+<script>
+(function () {
+  'use strict';
+  const MODULES = [
+    {
+      id: 'm94', cwe: 'CWE-94', num: '94', short: 'Code', title: 'Code injection',
+      intro: 'Request data turns into text the application compiles or evaluates as its own code.',
+      lesson: 'Never run user text as code. Check its shape, then call a fixed function you wrote.',
+      problem: 'A calculator page reads a sum such as "2 + 3" from the web address and passes it to eval() to get the answer.',
+      why: 'The input is the expr text; the sink is eval(). Anyone can put real JavaScript in the address, and the server runs it with its own access.',
+      works: 'The fix never runs the text. It checks for "number, + or *, number", answers 400 to anything else, then calls a function the developer wrote.',
+      unsafe: { code: 'const expr = req.query.expr;   // "2 + 3"\nres.send(String(eval(expr)));', hot: 1 },
+      fixed: { code: "const m = /^(\\d+) ([+*]) (\\d+)$/.exec(req.query.expr);\nif (!m) return res.sendStatus(400);\nconst OPS = { '+': (a, b) => a + b, '*': (a, b) => a * b };\nres.send(String(OPS[m[2]](Number(m[1]), Number(m[3]))));", hot: 1 },
+      samples: [
+        { kind: 'Ordinary', input: '2 + 3',
+          unsafe: { op: 'eval runs the text as JavaScript', out: '5', effect: 'ok' },
+          fixed: { op: 'Matches "number op number"; calls OPS["+"]', out: '5', effect: 'ok' } },
+        { kind: 'Harmful', input: "require('fs').readFileSync('.env')",
+          unsafe: { op: 'eval runs the text as JavaScript', out: 'Server secrets from .env sent back', effect: 'harm' },
+          fixed: { op: 'Does not match "number op number"', out: '400 Bad Request: nothing ran', effect: 'blocked' } }
+      ],
+      drill: {
+        title: 'Promo rule preview',
+        scenario: 'Store managers type a discount rule and preview the rate for their current cart.',
+        alert: { rule: 'js/dynamic-code-from-request', severity: 'High', location: 'reports/discount.js:4' },
+        code: "// reports/discount.js\napp.post('/api/promo/preview', requireLogin, (req, res) => {\n  const rule = req.body.rule;       // e.g. \"cart.total > 80 ? 0.15 : 0\"\n  const calc = new Function('cart', 'return (' + rule + ');');\n  res.json({ rate: calc(req.session.cart) });\n});",
+        source: { options: ['req.session.cart (server-side session)', 'requireLogin (session check)', 'req.body.rule (request body)', 'res.json response body'], answer: 2 },
+        sink: { options: ['res.json serialises the result', 'new Function(...) call', 'requireLogin reads the cookie', 'req.session.cart property read'], answer: 1 },
+        control: { options: ['Missing CSRF token', 'No per-user rate limit', 'Missing Content-Type header', 'No rule allowlist or constrained grammar'], answer: 3 },
+        cwe: 'CWE-94, specifically its child CWE-95 (Eval Injection)',
+        worked: [
+          'rule comes from the request body, is concatenated into source text, and new Function compiles it. Whatever a manager types runs with the server process privileges.',
+          'Login does not help: every logged-in manager, or a stolen session, can run code. Blocklists keep losing to new syntax; the fix is to stop evaluating text.'
+        ],
+        ticket: {
+          impact: 'Server-side code execution: read process.env secrets, call internal services, run commands as the app user.',
+          fix: 'Replace new Function with a fixed table of named rule handlers (or a small parser for numbers, cart fields and comparisons). Reject unknown rules with 400.',
+          verify: 'The ordinary rule still returns 0.15 for a 90.00 cart; env-reading payloads return 400; no eval or new Function remains on request paths.'
+        }
+      },
+      links: [['MITRE CWE-94', 'https://cwe.mitre.org/data/definitions/94.html'], ['MITRE CWE-95', 'https://cwe.mitre.org/data/definitions/95.html'], ['OWASP Code Injection', 'https://owasp.org/www-community/attacks/Code_Injection']]
+    },
+    {
+      id: 'm79', cwe: 'CWE-79', num: '79', short: 'XSS', title: 'Cross-site scripting',
+      intro: 'Untrusted text lands in a page as markup, so a script runs as the visitor on your site.',
+      lesson: 'Put user text into the page as text, not HTML.',
+      problem: 'A welcome banner reads a name from the web address, such as ?name=Ana, and shows "Hi Ana".',
+      why: 'The input is the name; the sink is innerHTML, which parses its value as HTML. A link with a tag in the name makes the browser build that tag and run its script.',
+      works: 'textContent puts the name on the page as plain text. The browser never parses it, so a tag shows up as ordinary characters.',
+      unsafe: { code: "const name = params.get('name');\nhello.innerHTML = 'Hi ' + name;", hot: 1 },
+      fixed: { code: "const name = params.get('name');\nhello.textContent = 'Hi ' + name;", hot: 1 },
+      samples: [
+        { kind: 'Ordinary', input: 'Ana',
+          unsafe: { op: 'innerHTML parses the string as HTML', out: 'Hi Ana', effect: 'ok' },
+          fixed: { op: 'textContent makes one text node', out: 'Hi Ana', effect: 'ok' } },
+        { kind: 'Harmful', input: '<img src=x onerror=alert(1)>',
+          unsafe: { op: 'innerHTML parses the string as HTML', out: 'Browser builds an <img>; its onerror script runs', effect: 'harm' },
+          fixed: { op: 'textContent makes one text node', out: 'Hi <img src=x onerror=alert(1)> shown as plain text', effect: 'blocked' } }
+      ],
+      drill: {
+        title: 'Search results page',
+        scenario: 'The catalog search echoes the search term back in the server-rendered page.',
+        alert: { rule: 'js/reflected-html', severity: 'Medium', location: 'search.js:5' },
+        code: "// search.js\napp.get('/search', (req, res) => {\n  const q = String(req.query.q || '');\n  const hits = catalog.find(q);\n  res.send(`<h1>Results</h1><p>${hits.length} matches for ${q}</p>`);\n});",
+        source: { options: ['catalog.find(q) rows', 'req.query.q (URL query string)', 'hits.length match count', 'The <h1>Results</h1> literal'], answer: 1 },
+        sink: { options: ['catalog.find(q) query', "String(req.query.q || '')", 'app.get route registration', 'res.send(`...${q}...`)'], answer: 3 },
+        control: { options: ['No HTML output encoding of q', 'Missing input length limit', 'Missing CSRF token', 'Search is not authenticated'], answer: 0 },
+        cwe: 'CWE-79 (reflected, Type 1)',
+        worked: [
+          'q is read from the URL and placed between HTML tags. A victim who opens a crafted link runs the attacker’s markup in this site’s origin.',
+          'For an HTML body context the fix is entity encoding, ideally an auto-escaping template so every value is covered. A sanitizer is for user-authored rich HTML, not plain text: it would mangle "C++ <vector> header".'
+        ],
+        ticket: {
+          impact: 'Script in our origin for anyone who follows a crafted link: session actions, data theft, phishing inside the real page.',
+          fix: 'Render /search through the auto-escaping template engine; remove string-built HTML from search.js.',
+          verify: '"C++ <vector> header" displays exactly; the img/onerror payload appears as visible text and no handler runs.'
+        }
+      },
+      links: [['MITRE CWE-79', 'https://cwe.mitre.org/data/definitions/79.html'], ['OWASP XSS Prevention Cheat Sheet', 'https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html']]
+    },
+    {
+      id: 'm78', cwe: 'CWE-78', num: '78', short: 'Commands', title: 'OS command injection',
+      intro: 'Untrusted text reaches a shell and adds commands, or reaches a program and adds options.',
+      lesson: 'Skip the shell, and accept only the values you expect.',
+      problem: 'A support page checks whether a server is up by running ping. The server name comes from the web address and is glued onto a command line.',
+      why: 'The input is host; the sink is exec(), which hands the whole line to a shell. To a shell ";" means "run another command". Text starting with "-" can become ping options.',
+      works: 'The fix accepts only names on its own list and answers 400 otherwise. execFile() starts ping directly, with no shell, passing the name as one argument.',
+      unsafe: { code: "const host = req.query.host;   // \"web-1\"\nexec('ping -c 1 ' + host);", hot: 1 },
+      fixed: { code: "const HOSTS = new Set(['web-1', 'web-2']);\nconst host = req.query.host;\nif (!HOSTS.has(host)) return res.sendStatus(400);\nexecFile('ping', ['-c', '1', host]);   // no shell", hot: 2 },
+      samples: [
+        { kind: 'Ordinary', input: 'web-1',
+          unsafe: { op: 'Shell runs: ping -c 1 web-1', out: '1 packet received from web-1', effect: 'ok' },
+          fixed: { op: 'web-1 is on the list; passed as one argument', out: '1 packet received from web-1', effect: 'ok' } },
+        { kind: 'Harmful', input: 'web-1; cat /etc/passwd',
+          unsafe: { op: 'Shell splits at ";" and runs a second command', out: 'cat /etc/passwd also runs as the app user', effect: 'harm' },
+          fixed: { op: 'Not on the list', out: '400 Bad Request: no command ran', effect: 'blocked' } },
+        { kind: 'Harmful', input: '-f web-1',
+          unsafe: { op: 'ping reads -f as an option, not a hostname', out: 'Attacker changes ping options', effect: 'harm' },
+          fixed: { op: 'Not on the list; options never reach ping', out: '400 Bad Request: no command ran', effect: 'blocked' } }
+      ],
+      drill: {
+        title: 'Hostname lookup tool',
+        scenario: 'Support staff paste a customer hostname to check that it resolves.',
+        alert: { rule: 'js/shell-command-from-request', severity: 'Critical', location: 'tools/netcheck.js:4' },
+        code: "// tools/netcheck.js\nconst { exec } = require('node:child_process');\napp.get('/support/resolve', requireStaff, (req, res) => {\n  exec('nslookup ' + req.query.host, (err, out) => res.type('text').send(String(out)));\n});",
+        source: { options: ['The "nslookup " literal', 'requireStaff access check', 'req.query.host (query string)', 'out, the nslookup stdout'], answer: 2 },
+        sink: { options: ['res.type("text").send(...)', 'require("node:child_process")', 'String(out) conversion', "exec('nslookup ' + ...)"], answer: 3 },
+        control: { options: ['Missing HTML encoding of out', 'A shell parses host; no DNS library call', 'No rate limit', 'No audit log of lookups'], answer: 1 },
+        cwe: 'CWE-78 (OS Command Injection)',
+        worked: [
+          'host is concatenated into a line that /bin/sh parses, so ; $( ) | && and backticks start new commands with the app’s privileges.',
+          'Best fix: avoid the OS command; DNS lookup is a library call. Dropping the shell alone is not enough: nslookup still reads "-timeout=3600" as an option. That is argument injection (CWE-88).'
+        ],
+        ticket: {
+          impact: 'Arbitrary commands as the web app user: read secrets, pivot to internal hosts, tamper with the deployment.',
+          fix: 'Replace exec(nslookup) with dns.promises.lookup after hostname validation (letters, digits, hyphens, dots; no leading "-"). Return 400 on invalid input.',
+          verify: 'status.example.com resolves; ; and $( ) payloads and option-shaped input return 400; no child_process import remains.'
+        }
+      },
+      links: [['MITRE CWE-78', 'https://cwe.mitre.org/data/definitions/78.html'], ['MITRE CWE-88', 'https://cwe.mitre.org/data/definitions/88.html'], ['OWASP Command Injection Defense', 'https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html']]
+    },
+    {
+      id: 'm22', cwe: 'CWE-22', num: '22', short: 'Paths', title: 'Path traversal',
+      intro: 'A user-influenced name becomes a file path and climbs out of the folder it was meant for.',
+      lesson: 'Do not build file paths from user text. Look the name up in a list the server controls.',
+      problem: 'A download page sends a file by name, such as ?name=report.pdf, from the folder /srv/files.',
+      why: 'The input is the name; the sink is the path that path.join() builds and sendFile() opens. Each "../" goes up one folder, so a name can reach any file the server can read.',
+      works: 'The fix never builds a path from user text. It looks the name up in a server-written map; unknown names get 404, and the path comes only from the server’s entry.',
+      unsafe: { code: "const file = path.join('/srv/files', req.query.name);\nres.sendFile(file);", hot: 0 },
+      fixed: { code: "const FILES = new Map([['report.pdf', 'a91f.pdf']]);   // set by the server\nconst stored = FILES.get(req.query.name);\nif (!stored) return res.sendStatus(404);\nres.sendFile(path.join('/srv/files', stored));", hot: 1 },
+      samples: [
+        { kind: 'Ordinary', input: 'report.pdf',
+          unsafe: { op: 'Path becomes /srv/files/report.pdf', out: 'report.pdf downloaded', effect: 'ok' },
+          fixed: { op: 'Map has report.pdf → a91f.pdf', out: 'report.pdf downloaded', effect: 'ok' } },
+        { kind: 'Harmful', input: '../../etc/passwd',
+          unsafe: { op: 'Each ../ climbs up: path becomes /etc/passwd', out: 'The server’s /etc/passwd downloaded', effect: 'harm' },
+          fixed: { op: 'No such key; no path is built', out: '404 Not Found', effect: 'blocked' } }
+      ],
+      drill: {
+        title: 'Invoice download',
+        scenario: 'Customers download invoice PDFs by name. The framework already percent-decodes query values once.',
+        alert: { rule: 'js/path-from-request', severity: 'High', location: 'files.js:6' },
+        code: "// files.js\nconst BASE = '/srv/invoices';\napp.get('/invoice', requireLogin, async (req, res) => {\n  const name = decodeURIComponent(req.query.file);   // second decode\n  const full = path.resolve(BASE, name);\n  res.type('pdf').send(await fs.readFile(full));\n});",
+        source: { options: ["BASE, the '/srv/invoices' constant", 'requireLogin session check', "res.type('pdf')", 'req.query.file (query string)'], answer: 3 },
+        sink: { options: ['decodeURIComponent second decode', "res.type('pdf').send(...)", 'fs.readFile(full)', 'requireLogin middleware'], answer: 2 },
+        control: { options: ['No containment check after a double decode', 'Missing Content-Disposition header', 'No rate limit on downloads', 'Missing CSRF token'], answer: 0 },
+        cwe: 'CWE-22 (Path Traversal)',
+        worked: [
+          'file comes from the URL, is decoded a second time, and path.resolve joins it to BASE. ../ climbs out, and an absolute path makes path.resolve discard BASE entirely.',
+          'Best: look up a server-managed invoice ID owned by this customer. If a name is unavoidable, resolve the real path and check containment by path components, not string prefix: /srv/invoices-archive starts with /srv/invoices.'
+        ],
+        ticket: {
+          impact: 'Read any file the app user can read: other customers’ invoices, .env secrets, source, system files.',
+          fix: 'Replace ?file= with ?id= mapped to invoice rows owned by req.user; read path.join(BASE, row.storedName). Remove the extra decodeURIComponent.',
+          verify: 'Own invoice downloads; relative, absolute, double-encoded and sibling-prefix inputs return 404/400; another customer’s id returns 404.'
+        }
+      },
+      links: [['MITRE CWE-22', 'https://cwe.mitre.org/data/definitions/22.html'], ['OWASP Path Traversal', 'https://owasp.org/www-community/attacks/Path_Traversal']]
+    }
+  ];
+
+  /* ---------- storage (per-viewer convenience only) ---------- */
+  const KEY = 'cwe-triage-lab:v2';
+  let done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { done = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {} }
+
+  /* ---------- tiny DOM helper ---------- */
+  function h(tag, attrs, kids) {
+    const el = document.createElement(tag);
+    if (attrs) for (const k in attrs) {
+      const v = attrs[k];
+      if (v == null || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? '' : v);
+    }
+    (kids || []).forEach(c => { if (c != null) el.append(c); });
+    return el;
+  }
+  function codeBlock(src, hot) {
+    const pre = h('pre', { class: 'code' });
+    src.split('\n').forEach((line, i) => pre.append(h('span', { class: 'ln' + (i === hot ? ' hot' : ''), text: line || ' ' })));
+    return pre;
+  }
+
+  /* ---------- nav + index ---------- */
+  const nav = document.getElementById('nav');
+  const index = document.getElementById('index');
+  const menu = document.getElementById('menu');
+  const sideMods = document.getElementById('sideMods');
+  let current = null;
+  function markHere(id) { current = id; nav.querySelectorAll('a').forEach(a => { const on = a.dataset.id === id; a.classList.toggle('here', on); if (on) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current'); }); }
+  function closeMenu() { sideMods.classList.remove('open'); menu.setAttribute('aria-expanded', 'false'); }
+  menu.addEventListener('click', () => { const open = !sideMods.classList.contains('open'); sideMods.classList.toggle('open', open); menu.setAttribute('aria-expanded', String(open)); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && sideMods.classList.contains('open')) { closeMenu(); menu.focus(); } });
+  function renderNav() {
+    nav.textContent = ''; index.textContent = '';
+    nav.append(h('a', { href: '#home', 'data-id': 'home', class: 'home-link', onclick: closeMenu }, [
+      h('span', null, [h('span', { class: 'c', text: 'Start here' }), h('span', { class: 't', text: 'Overview' })])
+    ]));
+    MODULES.forEach(m => {
+      nav.append(h('a', { href: '#' + m.id, 'data-id': m.id, onclick: closeMenu }, [
+        h('span', { class: 'n', 'aria-hidden': 'true', text: m.num }),
+        h('span', null, [h('span', { class: 'c', text: m.cwe }), h('span', { class: 't', text: m.title })]),
+        h('span', { class: 'dot' + (done[m.id] ? ' done' : ''), role: 'img', 'aria-label': done[m.id] ? 'Drill solved' : 'Not started' })
+      ]));
+      index.append(h('a', { href: '#' + m.id }, [
+        h('span', { class: 'num', text: m.num }),
+        h('span', { class: 't', text: m.title }),
+        h('span', { class: 's' }, [h('span', { class: 'dot' + (done[m.id] ? ' done' : ''), 'aria-hidden': 'true' }), document.createTextNode(done[m.id] ? 'Drill solved' : 'Not started')])
+      ]));
+    });
+    const n = MODULES.filter(m => done[m.id]).length;
+    document.getElementById('meter').style.width = (n / MODULES.length * 100) + '%';
+    document.getElementById('count').textContent = n + ' of ' + MODULES.length + ' drills solved';
+    if (current) markHere(current);
+    const note = document.getElementById('progressNote');
+    note.textContent = (n === MODULES.length ? 'All four drills solved. ' : n + ' of 4 drills solved. ') +
+      'Progress is saved in this browser only (localStorage) and is never sent anywhere. Anyone using this browser profile can see it.';
+  }
+
+  /* ---------- modules ---------- */
+  const host = document.getElementById('modules');
+  MODULES.forEach(m => host.append(renderModule(m)));
+  renderNav();
+
+  function renderModule(m) {
+    const sec = h('section', { class: 'module view', id: m.id, 'aria-labelledby': m.id + '-t', tabindex: '-1', hidden: true });
+    const wrap = h('div', { class: 'wrap' });
+    sec.append(wrap);
+
+    wrap.append(h('div', { class: 'mhead' }, [
+      h('div', { class: 'mnum', 'aria-hidden': 'true', text: m.num }),
+      h('div', null, [
+        h('span', { class: 'eyebrow', text: m.cwe }),
+        h('h2', { id: m.id + '-t', text: m.title }),
+        h('p', { class: 'intro', text: m.intro })
+      ])
+    ]));
+
+    wrap.append(h('div', { class: 'rule' }, [h('span', { class: 'eyebrow', text: 'The rule' }), h('p', { text: m.lesson })]));
+
+    wrap.append(h('div', { class: 'story' }, [
+      h('div', null, [h('h3', { text: '01 · The setup' }), h('p', { text: m.problem })]),
+      h('div', null, [h('h3', { text: '02 · Why it breaks' }), h('p', { text: m.why })]),
+      h('div', null, [h('h3', { text: '03 · Why the fix holds' }), h('p', { text: m.works })])
+    ]));
+
+    const sUnsafe = h('figure', { class: 'snip unsafe' }, [h('figcaption', null, [h('span', { text: 'Unsafe' }), h('small', { text: 'highlighted: the sink' })]), codeBlock(m.unsafe.code, m.unsafe.hot)]);
+    const sFixed = h('figure', { class: 'snip fixed' }, [h('figcaption', null, [h('span', { text: 'Fixed' }), h('small', { text: 'highlighted: the guard' })]), codeBlock(m.fixed.code, m.fixed.hot)]);
+    wrap.append(h('div', { class: 'pair' }, [sUnsafe, sFixed]));
+
+    /* tracer */
+    let sample = 0, version = 'unsafe';
+    const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Input to send' });
+    const rIn = h('li'), rOp = h('li'), rOut = h('li');
+    const verdict = h('p', { class: 'verdict', 'aria-live': 'polite' });
+    const bU = h('button', { type: 'button', class: 'u', 'aria-pressed': 'true', text: 'Unsafe', onclick: () => { version = 'unsafe'; run(); } });
+    const bF = h('button', { type: 'button', class: 'f', 'aria-pressed': 'false', text: 'Fixed', onclick: () => { version = 'fixed'; run(); } });
+    m.samples.forEach((s, i) => chips.append(h('button', { type: 'button', class: 'chip', 'aria-pressed': i === 0 ? 'true' : 'false', onclick: () => { sample = i; run(); } }, [h('span', { class: 'k', text: s.kind }), document.createTextNode(s.input)])));
+
+    function slot(li, head, val, cls, code) {
+      li.className = cls || '';
+      li.textContent = '';
+      li.append(h('span', { class: 'h', text: head }), h('span', { class: 'v' + (code ? ' code' : ''), text: val }));
+    }
+    let timers = [];
+    function run() {
+      timers.forEach(clearTimeout); timers = [];
+      const s = m.samples[sample], r = s[version];
+      [...chips.children].forEach((c, i) => c.setAttribute('aria-pressed', i === sample ? 'true' : 'false'));
+      bU.setAttribute('aria-pressed', version === 'unsafe'); bF.setAttribute('aria-pressed', version === 'fixed');
+      sUnsafe.classList.toggle('dim', version !== 'unsafe'); sFixed.classList.toggle('dim', version !== 'fixed');
+      sUnsafe.classList.toggle('on', version === 'unsafe'); sFixed.classList.toggle('on', version === 'fixed');
+      const outCls = r.effect === 'harm' ? 'harm' : (r.effect === 'blocked' ? 'safe' : '');
+      const outHead = r.effect === 'harm' ? 'Outcome · harm' : (r.effect === 'blocked' ? 'Outcome · blocked' : 'Outcome');
+      slot(rIn, 'Input', s.input, '', true);
+      slot(rOp, 'What the code does', r.op, '');
+      slot(rOut, outHead, r.out, outCls);
+      verdict.textContent = '';
+      const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const steps = [() => rIn.classList.add('lit'), () => rOp.classList.add('lit'), () => {
+        rOut.classList.add('lit');
+        verdict.textContent = r.effect === 'harm' ? 'The ' + version + ' code let this input do damage.' :
+          r.effect === 'blocked' ? 'The guard stopped it before anything ran.' : 'Ordinary input works the same either way.';
+      }];
+      steps.forEach((f, i) => reduce ? f() : timers.push(setTimeout(f, 120 + i * 260)));
+    }
+
+    wrap.append(h('div', { class: 'tracer' }, [
+      h('div', { class: 'tracer-top' }, [
+        h('div', null, [h('span', { class: 'eyebrow group-label', text: 'Send an input' }), chips]),
+        h('div', null, [h('span', { class: 'eyebrow group-label', text: 'Through' }), h('div', { class: 'toggle', role: 'group', 'aria-label': 'Code version' }, [bU, bF])])
+      ]),
+      h('ol', { class: 'rail', 'aria-label': 'Trace' }, [rIn, rOp, rOut]),
+      verdict
+    ]));
+    run();
+
+    wrap.append(renderDrill(m));
+
+    wrap.append(h('div', { class: 'refs' }, [h('span', { class: 'eyebrow', text: 'Go deeper' })].concat(
+      m.links.map(l => h('a', { href: l[1], target: '_blank', rel: 'noopener', text: l[0] + ' ↗' })))));
+
+    const i = MODULES.indexOf(m), prev = MODULES[i - 1], next = MODULES[i + 1];
+    wrap.append(h('nav', { class: 'pager', 'aria-label': 'Previous and next module' }, [
+      prev ? h('a', { href: '#' + prev.id, class: 'prev' }, [h('span', { class: 'eyebrow', text: '← ' + prev.cwe }), h('b', { text: prev.title })])
+           : h('a', { href: '#home', class: 'prev' }, [h('span', { class: 'eyebrow', text: '← Overview' }), h('b', { text: 'All four CWEs' })]),
+      next ? h('a', { href: '#' + next.id, class: 'next' }, [h('span', { class: 'eyebrow', text: next.cwe + ' →' }), h('b', { text: next.title })])
+           : h('a', { href: '#home', class: 'next' }, [h('span', { class: 'eyebrow', text: 'Overview →' }), h('b', { text: 'Back to the start' })])
+    ]));
+    return sec;
+  }
+
+  function renderDrill(m) {
+    const d = m.drill;
+    const det = h('details', { class: 'drill' });
+    const meta = h('span', { class: 'meta' });
+    function setMeta() {
+      meta.textContent = '';
+      meta.append(h('span', { class: 'dot' + (done[m.id] ? ' done' : ''), 'aria-hidden': 'true' }), document.createTextNode(done[m.id] ? 'Solved' : '3 questions'), h('span', { class: 'plus', 'aria-hidden': 'true', text: '+' }));
+    }
+    setMeta();
+    det.append(h('summary', null, [h('span', { class: 'title' }, [h('i', { text: 'Triage drill: ' }), document.createTextNode(d.title)]), meta]));
+
+    const body = h('div', { class: 'drill-body' });
+    det.append(body);
+    body.append(h('p', { class: 'scenario', text: d.scenario }));
+    body.append(h('div', { class: 'alert' }, [h('span', { class: 'sev', text: d.alert.severity }), h('span', { text: d.alert.rule }), h('span', { class: 'loc', text: d.alert.location })]));
+    body.append(codeBlock(d.code, -1));
+
+    const qs = [['source', 'Step 1 · Source', 'Where does untrusted text enter?'], ['sink', 'Step 2 · Sink', 'Where is it interpreted?'], ['control', 'Step 3 · Gap', 'Which control is missing?']];
+    const grid = h('div', { class: 'qs' });
+    const fields = {};
+    qs.forEach(([key, step, q]) => {
+      const fs = h('fieldset', { class: 'q' }, [h('legend', null, [h('span', { text: step }), document.createTextNode(q)])]);
+      d[key].options.forEach((o, i) => {
+        fs.append(h('label', { class: 'opt' }, [h('input', { type: 'radio', name: m.id + '-' + key, value: String(i) }), h('span', { text: o })]));
+      });
+      fields[key] = fs; grid.append(fs);
+    });
+    body.append(grid);
+
+    const status = h('span', { class: 'status', 'aria-live': 'polite' });
+    const answer = h('div', { class: 'answer', hidden: true }, [
+      h('p', { class: 'cwe', text: d.cwe }),
+      h('ol', null, d.worked.map(w => h('li', { text: w }))),
+      h('dl', { class: 'ticket' }, [
+        h('dt', { text: 'Impact' }), h('dd', { text: d.ticket.impact }),
+        h('dt', { text: 'Ticket' }), h('dd', { text: d.ticket.fix }),
+        h('dt', { text: 'Verify' }), h('dd', { text: d.ticket.verify })
+      ])
+    ]);
+
+    function check() {
+      let right = 0, missing = 0;
+      qs.forEach(([key]) => {
+        const fs = fields[key];
+        const picked = fs.querySelector('input:checked');
+        fs.querySelectorAll('.opt').forEach(o => o.classList.remove('right', 'wrong'));
+        if (!picked) { missing++; return; }
+        const ok = Number(picked.value) === d[key].answer;
+        picked.closest('.opt').classList.add(ok ? 'right' : 'wrong');
+        if (ok) right++;
+      });
+      if (missing) { status.className = 'status bad'; status.textContent = 'Answer all three steps first.'; return; }
+      if (right === 3) {
+        status.className = 'status good'; status.textContent = 'All three correct. Here is the write-up.';
+        answer.hidden = false; done[m.id] = true; save(); setMeta(); renderNav();
+      } else {
+        status.className = 'status bad'; status.textContent = right + ' of 3 correct. Re-trace the flow and try again.';
+      }
+    }
+    function reveal() {
+      qs.forEach(([key]) => fields[key].querySelectorAll('.opt').forEach((o, i) => { o.classList.remove('wrong'); o.classList.toggle('right', i === d[key].answer); }));
+      answer.hidden = false; status.className = 'status'; status.textContent = 'Answers shown.';
+    }
+    body.append(h('div', { class: 'btns' }, [
+      h('button', { type: 'button', class: 'btn', text: 'Check my triage', onclick: check }),
+      h('button', { type: 'button', class: 'btn ghost', text: 'Show answers', onclick: reveal }),
+      status
+    ]));
+    body.append(answer);
+    if (done[m.id]) { answer.hidden = false; }
+    return det;
+  }
+
+  document.getElementById('reset').addEventListener('click', () => {
+    done = {}; try { localStorage.removeItem(KEY); } catch (e) {}
+    host.textContent = ''; MODULES.forEach(m => host.append(renderModule(m))); renderNav(); route(false);
+  });
+
+  /* one view at a time: the hash picks it, the window starts at the top */
+  const IDS = ['home'].concat(MODULES.map(m => m.id));
+  function hashId() { try { return location.hash.slice(1); } catch (e) { return ''; } }
+  function route(moveFocus, forced) {
+    const h0 = forced || hashId();
+    if (moveFocus && IDS.indexOf(h0) < 0) return; /* e.g. the skip link: keep the current view */
+    const id = IDS.indexOf(h0) >= 0 ? h0 : (current || 'home');
+    show(id, moveFocus);
+  }
+  function show(id, moveFocus) {
+    document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== id; });
+    markHere(id);
+    const m = MODULES.find(x => x.id === id);
+    document.title = m ? m.cwe + ' ' + m.title + ' · CWE Triage Lab' : 'CWE Triage Lab';
+    window.scrollTo(0, 0);
+    closeMenu();
+    if (moveFocus) { const v = document.getElementById(id); if (v) v.focus({ preventScroll: true }); }
+  }
+  /* Switch views on click ourselves, so it works even where the page cannot change its address (previews, sandboxes). */
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const id = a.getAttribute('href').slice(1);
+    if (IDS.indexOf(id) < 0) {
+      if (id === 'main') { e.preventDefault(); const v = document.getElementById(current || 'home'); if (v) v.focus(); }
+      return;
+    }
+    e.preventDefault();
+    show(id, true);
+    try { if (hashId() !== id) history.pushState(null, '', '#' + id); } catch (err) {}
+  });
+  try { history.scrollRestoration = 'manual'; } catch (e) {}
+  window.addEventListener('hashchange', () => route(true));
+  window.addEventListener('popstate', () => route(true));
+  window.addEventListener('load', () => requestAnimationFrame(() => window.scrollTo(0, 0)));
+  route(false);
+})();
+</script>
+</body>
+</html>
